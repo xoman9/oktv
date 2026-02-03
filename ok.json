@@ -1,0 +1,213 @@
+{
+  "spider": "./jar/xiaosa.jar",
+  "notice": "穩定最小源 v1｜30站｜瘦身完成｜低負載",
+  "sites": [
+
+    /* ===== 官源 ===== */
+    {
+      "key": "360",
+      "name": "360影视",
+      "type": 3,
+      "api": "csp_360",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "tx",
+      "name": "腾讯视频",
+      "type": 3,
+      "api": "csp_Tencent",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "yk",
+      "name": "优酷视频",
+      "type": 3,
+      "api": "csp_Youku",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "aqy",
+      "name": "爱奇艺",
+      "type": 3,
+      "api": "csp_IQIYI",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "mg",
+      "name": "芒果TV",
+      "type": 3,
+      "api": "csp_Mango",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "bili",
+      "name": "哔哩哔哩",
+      "type": 3,
+      "api": "csp_Bili",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 0
+    },
+
+    /* ===== 民源核心 ===== */
+    {
+      "key": "ddys",
+      "name": "低端影视",
+      "type": 3,
+      "api": "csp_Ddys",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "kpkr",
+      "name": "看片狂人",
+      "type": 3,
+      "api": "csp_XBPQ",
+      "jar": "./jar/xyqxbpq.jar",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "dbs",
+      "name": "大白鲨",
+      "type": 3,
+      "api": "csp_XBPQ",
+      "jar": "./jar/xyqxbpq.jar",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "yl",
+      "name": "永乐影院",
+      "type": 3,
+      "api": "csp_YL",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "wx",
+      "name": "我闲影院",
+      "type": 3,
+      "api": "csp_WX",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "qiyi",
+      "name": "奇优影院",
+      "type": 3,
+      "api": "csp_QY",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "fox",
+      "name": "狐狸君",
+      "type": 3,
+      "api": "csp_FOX",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "egg",
+      "name": "蛋蛋影视",
+      "type": 3,
+      "api": "csp_EGG",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "dog",
+      "name": "电视狗",
+      "type": 3,
+      "api": "csp_TVG",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+    {
+      "key": "zj",
+      "name": "追剧网",
+      "type": 3,
+      "api": "csp_ZJ",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+
+    /* ===== 快线备援 ===== */
+    {
+      "key": "jp",
+      "name": "金牌线路",
+      "type": 3,
+      "api": "csp_JP",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 0
+    },
+    {
+      "key": "yp",
+      "name": "银牌线路",
+      "type": 3,
+      "api": "csp_YP",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 0
+    },
+    {
+      "key": "tp",
+      "name": "铜牌线路",
+      "type": 3,
+      "api": "csp_TP",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 0
+    },
+    {
+      "key": "ff",
+      "name": "非凡",
+      "type": 3,
+      "api": "csp_FF",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 0
+    },
+    {
+      "key": "fk",
+      "name": "飞快",
+      "type": 3,
+      "api": "csp_FK",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 0
+    },
+    {
+      "key": "jz",
+      "name": "饺子",
+      "type": 3,
+      "api": "csp_JZ",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 0
+    }
+
+  ]
+}

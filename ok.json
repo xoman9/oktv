@@ -1,9 +1,8 @@
 {
-  "spider": "./jar/xiaosa1208.jar",
-  "notice": "穩定最小源 v1｜30站｜瘦身完成｜低負載",
+  "spider": "./jar/xiaosa.jar",
+  "notice": "穩定最小源 v1｜30站｜瘦身完成",
   "sites": [
 
-    /* ===== 官源 ===== */
     {
       "key": "360",
       "name": "360影视",
@@ -59,7 +58,6 @@
       "filterable": 0
     },
 
-    /* ===== 民源核心 ===== */
     {
       "key": "ddys",
       "name": "低端影视",
@@ -108,7 +106,7 @@
       "filterable": 1
     },
     {
-      "key": "qiyi",
+      "key": "qy",
       "name": "奇优影院",
       "type": 3,
       "api": "csp_QY",
@@ -153,7 +151,6 @@
       "filterable": 1
     },
 
-    /* ===== 快线备援 ===== */
     {
       "key": "jp",
       "name": "金牌线路",

@@ -1,0 +1,80 @@
+name: Quanju 128 MiB ARM64
+on:
+  push:
+    branches: [codex/catalog-128mib-arm64]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  GOPROXY: https://proxy.golang.org,direct
+  GOSUMDB: sum.golang.org
+  PYTHONUTF8: '1'
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: native/go.mod
+          cache-dependency-path: native/go.sum
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - name: Add sdkmanager to PATH
+        run: |
+          SDKM_BIN=$(dirname "$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -path '*/bin/*' | head -1)")
+          echo "$SDKM_BIN" >> "$GITHUB_PATH"
+      - run: yes | sdkmanager --licenses > /dev/null || true
+      - run: sdkmanager 'ndk;28.2.13676358'
+      - name: Configure Android signing
+        run: python scripts/configure_signing.py
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      - run: test -f android/key.properties || { echo "::error::Missing release signing Secrets; refusing debug-signed APK"; exit 1; }
+      - name: Catalog persistence tests
+        working-directory: native
+        run: go test ./core -run "^TestNativeCatalog(SizeLimitPreservesPreviousFile|SaveFailureRetriesWithoutAdvancing)$" -count=1
+      - run: python scripts/build_android.py --all-sources --abi arm64-v8a
+      - name: Verify ARM64 APK and signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          test -s "$APK"
+          unzip -t "$APK"
+          unzip -l "$APK" | grep 'lib/arm64-v8a/libduanju_core.so'
+          if unzip -Z1 "$APK" | grep -E '^lib/(armeabi-v7a|x86|x86_64)/'; then exit 1; fi
+          BT=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$BT/apksigner" verify --verbose --print-certs "$APK" | tee signature.txt
+          "$BT/aapt" dump badging "$APK" | tee badging.txt
+          grep "package: name='com.duanju.duanju_app' versionCode='95' versionName='1.4.3'" badging.txt
+          grep "application-label:'全剧视界'" badging.txt
+          sha256sum "$APK" | tee SHA256SUMS.txt
+      - name: Remove signing files
+        if: always()
+        run: python scripts/configure_signing.py --clean
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quanju-128mib-arm64
+          path: |
+            dist/android/*
+            signature.txt
+            badging.txt
+            SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+

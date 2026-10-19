@@ -2,7 +2,9 @@
 
 自编译版加入 韩小圈，鬼片，A123（青空已下线移除）
 
-Flutter 多端独立短剧应用，原名“短剧库 APP”。站源请求、解析、下载和播放均在设备上完成，不依赖旧项目或自建服务。当前源码版本：**1.4.2+94（未验证开发快照）**。
+Flutter 多端独立短剧应用，原名“短剧库 APP”。站源请求、解析、下载和播放均在设备上完成，不依赖旧项目或自建服务。当前源码版本：**1.4.3+95（未验证开发快照）**。
+
+本轮仅将 Go 原生剧库本地保存上限从 32 MiB 提高到 128 MiB，并同步容量错误提示；站源记录 4 MiB 上限保持不变。基础提交 f007fdb 为 1.4.2+94 整批上传，README 记载其相较 +93 增加搜索焦点修复；无 +93 对应提交，不能确认与既有 APK 完全一致。使用独立 ARM64 Actions 工作流，固定发布签名缺失时明确失败，不回退 debug 签名。构建及签名验证以 Actions 结果为准，实机行为尚未验证。
 
 本轮（1.4.2+94）修复 Android 电视端与 macOS / Windows 桌面端「搜索焦点跳不出搜索框」。根因两层：一是 `SearchInput` 的 `RawAutocomplete` 在联想下拉打开时把上下方向键映射为选项高亮导航且夹在 0..N-1，永远无法越界跳出输入框；二是裸 `TextField`（下载页、观看记录 / 追剧页搜索）在桌面与电视端被 `DefaultTextEditingShortcuts` 的「上下移光标到相邻行」动作吞掉方向键——单行框里移动无效却返回 handled，焦点原地卡死。修复：① 参考 guoappxian 项目移植 `RemoteTextInput`（`lib/remote_widgets.dart`），以后代 `Focus.onKeyEvent` 在文本框祖先层抢先处理方向键——上 / 下键 `focusInDirection` 移出搜索框、返回 / Esc 先尝试向下再向上移出并收起输入法、电视端确认键 `requestKeyboard()` 重新唤起输入法；生效范围为电视模式与 macOS / Windows / Linux 桌面（Android 手机不受影响），并加「输入法组字中（composing 非空）放行方向键给软键盘选词」的保护；接入 `downloads_screen.dart` 与 `saved_library.dart` 两处裸搜索框。② 重写 `lib/search_input.dart` 的按键逻辑：在自己持有的 `FocusNode.onKeyEvent` 上（焦点冒泡第一站，早于 RawAutocomplete 上层 Shortcuts；EditableText 内部 Focus 不传 onKeyEvent、且外部节点不会被 `_usingExternalFocus` 分支覆盖，均已对照 Flutter 3.32 源码确认）接管方向键——联想打开时上下键驱动自维护的 `_nav` 高亮（`ValueListenableBuilder` 渲染选中项，替代 `AutocompleteHighlightedOption`），到达列表上 / 下边界后再越界时改为 `focusInDirection` 移出输入框；联想关闭时方向键直接移出；下拉打开时回车 / select 提交高亮项、Esc / goBack 先收起联想；同样带 composing 组字放行。电视与桌面、手机触屏共用同一组件，手机无键盘时节点回调不触发、行为不变。
 

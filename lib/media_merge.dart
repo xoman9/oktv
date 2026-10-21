@@ -28,6 +28,46 @@ List<DownloadJob> continuousMergeJobs(List<DownloadJob> selected) {
   return jobs;
 }
 
+const _mergedStorageChannel = MethodChannel('duanju/device');
+
+Future<bool> ensureSharedMergeStorage() async {
+  if (!Platform.isAndroid) return true;
+  final granted = await _mergedStorageChannel.invokeMethod<bool>('sharedStorageAccess') ?? false;
+  if (granted) return true;
+  await _mergedStorageChannel.invokeMethod<bool>('requestSharedStorageAccess');
+  return false;
+}
+
+Future<void> _copyMergedToSharedDirectory(File original, Drama drama) async {
+  if (!Platform.isAndroid) return;
+  if (!(await _mergedStorageChannel.invokeMethod<bool>('sharedStorageAccess') ?? false)) {
+    throw AppFailure('尚未授予所有檔案存取權限，請到系統設定開啟後再重試合併；原檔已保留');
+  }
+  final base = Directory('/storage/emulated/0/Download/duanju');
+  final folder = Directory(path.join(base.path, _safeName(drama.title)));
+  await folder.create(recursive: true);
+  final baseName = _safeName(drama.title);
+  for (var n = 0; n < 10000; n++) {
+    final name = n == 0 ? '$baseName.mkv' : '$baseName ($n).mkv';
+    final dest = File(path.join(folder.path, name));
+    if (await dest.exists()) continue;
+    final writing = File('${dest.path}.writing-${DateTime.now().microsecondsSinceEpoch}');
+    try {
+      await original.copy(writing.path);
+      if (await writing.length() != await original.length()) {
+        throw AppFailure('共用目錄影片複製不完整，已保留原檔');
+      }
+      // No overwrites: destination names are sequentially disambiguated.
+      if (await dest.exists()) continue;
+      await writing.rename(dest.path);
+      return;
+    } finally {
+      if (await writing.exists()) await writing.delete();
+    }
+  }
+  throw AppFailure('同名合併影片過多，無法建立新檔');
+}
+
 String _mergeDigest(Object value) =>
     sha256.convert(utf8.encode(jsonEncode(value))).toString();
 
@@ -59,6 +99,9 @@ extension MediaMergeOperations on MediaLibrary {
           listEquals(existing.episodes, task.episodes) &&
           await File(fileFor(existing)).exists() &&
           await File(fileFor(existing)).length() == existing.bytes) {
+        if (task.skipVerification) {
+          await _copyMergedToSharedDirectory(File(fileFor(existing)), existing.drama);
+        }
         return existing;
       }
       final current = {
@@ -352,6 +395,9 @@ extension MediaMergeOperations on MediaLibrary {
     } catch (_) {
       _items = previous;
       rethrow;
+    }
+    if (skipVerification) {
+      await _copyMergedToSharedDirectory(target, jobs.first.drama);
     }
     return item;
   }

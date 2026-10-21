@@ -718,6 +718,21 @@ class _StorageScreenState extends State<StorageScreen> {
     }
   }
 
+  Future<void> _authorizeSharedStorage() async {
+    try {
+      const channel = MethodChannel('duanju/device');
+      final granted = await channel.invokeMethod<bool>('sharedStorageAccess') ?? false;
+      if (!granted) {
+        await channel.invokeMethod<bool>('requestSharedStorageAccess');
+        if (mounted) setState(() => _error = '請到系統設定允許本 APP 管理所有檔案，返回後按「刷新用量」');
+      } else {
+        await _refresh();
+      }
+    } catch (error) {
+      if (mounted) setState(() => _error = '無法開啟儲存權限設定：$error');
+    }
+  }
+
   Future<void> _move() async {
     String? parent;
     if (Platform.isAndroid || Platform.isIOS) {
@@ -840,6 +855,12 @@ class _StorageScreenState extends State<StorageScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(_error!),
+                ),
+              if (Platform.isAndroid)
+                OutlinedButton.icon(
+                  onPressed: _busy ? null : _authorizeSharedStorage,
+                  icon: const Icon(Icons.folder_shared_outlined),
+                  label: const Text('開啟所有檔案存取權限'),
                 ),
               if (widget.store.profile.admin)
                 FilledButton.icon(

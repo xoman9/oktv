@@ -161,6 +161,11 @@ class MainActivity : FlutterActivity() {
             .also { channel ->
                 channel.setMethodCallHandler { call, result ->
                     when (call.method) {
+                        "sharedDownloadDirectory" -> {
+                            val root = Environment.getExternalStorageDirectory()
+                            val target = java.io.File(root, "Download/duanju")
+                            result.success(target.absolutePath)
+                        }
                         "sharedStorageAccess" -> {
                             result.success(Build.VERSION.SDK_INT < Build.VERSION_CODES.R ||
                                 Environment.isExternalStorageManager())

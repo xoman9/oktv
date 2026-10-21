@@ -14,6 +14,7 @@ import 'background_downloads.dart';
 import 'ios_dialogs.dart';
 import 'liquid_glass.dart';
 import 'local_store.dart';
+import 'library_transfer_actions.dart';
 import 'profiles_screen.dart';
 import 'remote_widgets.dart';
 import 'app_build.dart';
@@ -135,6 +136,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await widget.store.importBackup(content);
         if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
       }
+    } catch (error) {
+      if (mounted) setState(() => _message = error.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _transferLibrary(bool restore) async {
+    if (_busy) return;
+    setState(() { _busy = true; _message = null; });
+    try {
+      final transfer = LibraryTransfer(widget.repository);
+      final result = restore
+          ? await transfer.importLibrary()
+          : await transfer.exportLibrary();
+      if (mounted) setState(() => _message = result.message);
     } catch (error) {
       if (mounted) setState(() => _message = error.toString());
     } finally {
@@ -287,6 +304,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               leading: const Icon(Icons.restore),
               title: const Text('恢复配置备份'),
               onTap: _busy ? null : () => _backup(true),
+            ),
+            ListTile(
+              leading: const Icon(Icons.menu_book_rounded),
+              title: const Text('导出剧库'),
+              subtitle: const Text('与「果果剧库」互相导入，只含剧库条目'),
+              onTap: _busy ? null : () => _transferLibrary(false),
+            ),
+            ListTile(
+              leading: const Icon(Icons.library_add_rounded),
+              title: const Text('导入剧库'),
+              subtitle: const Text('按剧集 ID 合并补全，不删除本地条目'),
+              onTap: _busy ? null : () => _transferLibrary(true),
             ),
           ],
           if (Platform.isIOS)
@@ -618,7 +647,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: '恢复配置备份',
               onTap: _busy ? null : () => _backup(true),
             ),
-          ], footer: '包含本地用户、追剧、历史和设置，不含视频文件。'),
+            _glassRow(
+              icon: LucideIcons.bookOpen,
+              color: const Color(0xFF0A84FF),
+              title: '导出剧库',
+              onTap: _busy ? null : () => _transferLibrary(false),
+            ),
+            _glassRow(
+              icon: LucideIcons.bookPlus,
+              color: const Color(0xFFFF9F0A),
+              title: '导入剧库',
+              onTap: _busy ? null : () => _transferLibrary(true),
+            ),
+          ], footer: '配置备份不含视频；剧库导入按剧集 ID 合并，不删除本地条目。'),
         ],
         if (_busy)
           const Padding(

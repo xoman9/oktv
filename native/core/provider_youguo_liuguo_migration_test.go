@@ -4,8 +4,8 @@ import "testing"
 
 func TestZhenguoYouguoLiuguoRegistration(t *testing.T) {
  for _, tc := range []struct{id, host, name string}{
-  {sourceYouguo, "youavhub.com", "柚果"},
-  {sourceLiuguo, "llsp.me", "榴果"},
+  {sourceYouguo, "youavhub.com", "柚果 🔞"},
+  {sourceLiuguo, "llsp.me", "榴果 🔞"},
  } {
   spec, ok := duanjuSourceSpecFor(tc.id)
   if !ok || spec.Name != tc.name || spec.Kind != "maccms" { t.Fatalf("%s registration invalid: %+v %v", tc.id, spec, ok) }

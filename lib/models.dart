@@ -40,17 +40,6 @@ class SourceSite {
   final String description;
   bool get onlineSearch => id == 'hongguo' || pagedSearch || duanjuOnlineSearch;
   bool get duanjuOnlineSearch => const {
-    'yaguo',
-    'maoguo',
-    'fanguo',
-    'guanguo',
-    'heguo',
-    'xingguo',
-    'huaguo',
-    'niuguo',
-    'wangguo',
-    'faguo',
-    'wuguo',
   }.contains(id);
   bool get pagedSearch =>
       id == 'huangju' ||
@@ -190,7 +179,6 @@ class SourceSite {
   static const defaultHiddenSiteIds = <String>{
     'huangdou',
     'huangju',
-    'yeguo',
     'dsd',
     'huangguo-video',
     'huangguoai',
@@ -206,7 +194,6 @@ class SourceSite {
     'wangguo',
     'faguo',
     'wuguo',
-    'miguo',
     'taoguo',
     'yanguo',
     'youguo',

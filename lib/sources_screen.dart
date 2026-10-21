@@ -773,6 +773,11 @@ class _SourceVisibilityScreenState extends State<SourceVisibilityScreen> {
                           ),
                         for (final source in group.sources)
                           SwitchListTile(
+                            // Restore the original prominent oval track on every source row.
+                            activeColor: Colors.white,
+                            activeTrackColor: const Color(0xFFE83E32),
+                            inactiveThumbColor: Colors.white,
+                            inactiveTrackColor: const Color(0xFFFFD7D2),
                             secondary: const Icon(Icons.dns_outlined),
                             title: Text(
                               group.sources.length > 1

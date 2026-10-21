@@ -217,6 +217,30 @@ class LocalStore extends ChangeNotifier {
       _notify();
     });
   }
+  /// Batch visibility changes into one persistence transaction.
+  /// This avoids a chain of writes when toggling all adult sources.
+  Future<void> setSitesVisible(Iterable<String> sources, bool visible) {
+    final epoch = _epoch;
+    final ids = sources.toSet();
+    return _queue(() async {
+      if (locked || epoch != _epoch || ids.isEmpty) return;
+      if (ids.any((id) => !SourceSite.isKnown(id))) {
+        throw StateError('未知站源');
+      }
+      final next = Set<String>.of(hiddenSites);
+      if (visible) {
+        next.removeAll(ids);
+      } else {
+        next.addAll(ids);
+      }
+      await _commit({
+        _key('hiddenSites'): jsonEncode(next.toList()),
+        _key('visibleDramaDefaultsV2'): 'done',
+      });
+      _notify();
+    });
+  }
+
   List<CustomSourceSite> get customSources => List.unmodifiable(_customSources);
 
   void _loadCustomSources() {

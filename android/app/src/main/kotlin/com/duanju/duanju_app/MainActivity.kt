@@ -167,11 +167,24 @@ class MainActivity : FlutterActivity() {
                             result.success(target.absolutePath)
                         }
                         "sharedStorageAccess" -> {
-                            result.success(Build.VERSION.SDK_INT < Build.VERSION_CODES.R ||
-                                Environment.isExternalStorageManager())
+                            result.success(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                Environment.isExternalStorageManager()
+                            } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                                checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+                                    PackageManager.PERMISSION_GRANTED
+                            } else true)
                         }
                         "requestSharedStorageAccess" -> {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                                if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                                    PackageManager.PERMISSION_GRANTED) {
+                                    requestPermissions(arrayOf(
+                                        android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                    ), 9812)
+                                    result.success(false)
+                                } else result.success(true)
+                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
                                 !Environment.isExternalStorageManager()) {
                                 val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
                                     Uri.parse("package:$packageName"))

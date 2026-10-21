@@ -41,7 +41,7 @@ class SourceSite {
   bool get onlineSearch => id == 'hongguo' || pagedSearch || duanjuOnlineSearch;
   bool get duanjuOnlineSearch => const {
     'yaguo', 'maoguo', 'fanguo', 'guanguo', 'heguo', 'xingguo',
-    'huaguo', 'niuguo', 'wangguo', 'faguo', 'wuguo', 'miguo',
+    'huaguo', 'niuguo', 'wangguo', 'faguo', 'wuguo', 'miguo', 'shuangguo',
     'taoguo', 'yanguo', 'youguo', 'liuguo', 'meiguo', 'chengguo',
     'xiaoguo', 'yingguo', 'luguo', 'liguo', 'juguo', 'zaoguo',
     'ningguo', 'mangguo', 'chaoguo',
@@ -108,6 +108,7 @@ class SourceSite {
     SourceSite('faguo', '发果', '168 短剧 · 网页目录'),
     SourceSite('wuguo', '伍果', '五五短剧 · 网页目录'),
     SourceSite('miguo', '米果', '大米星球 · 网页目录'),
+    SourceSite('shuangguo', '爽果', '短剧网 · 网页目录'),
   ];
   static const adultDuanjuValues = [
     SourceSite('chaoguo', '超果 🔞', '网页目录'),

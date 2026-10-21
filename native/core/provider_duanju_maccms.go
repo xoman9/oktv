@@ -447,6 +447,14 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 		} else {
 			address = fmt.Sprintf("%s%s/page/%d.html", base, strings.TrimSuffix(class, ".html"), page)
 		}
+	case source == sourceTaoguo || source == sourceYanguo:
+		class := strings.TrimSpace(category)
+		if class == "" { class = "1" }
+		if page <= 1 {
+			address = fmt.Sprintf("%s/index.php/vod/type/id/%s.html", base, url.PathEscape(class))
+		} else {
+			address = fmt.Sprintf("%s/index.php/vod/type/id/%s/page/%d.html", base, url.PathEscape(class), page)
+		}
 	case source == sourceMiguo:
 		if page <= 1 && strings.TrimSpace(category) == "" {
 			address = base + "/"
@@ -664,6 +672,16 @@ func maccmsDetailCandidates(source, base, sourceID string) []string {
 			fmt.Sprintf("%s/dramaDetail/%s.html", base, sourceID),
 			fmt.Sprintf("%s/detail/%s.html", base, sourceID),
 		}
+	case source == sourceTaoguo:
+		return []string{
+			fmt.Sprintf("%s/index.php/vod/detail/id/%s.html", base, sourceID),
+			fmt.Sprintf("%s/index.php/vod/play/id/%s.html", base, sourceID),
+		}
+	case source == sourceYanguo:
+		return []string{
+			fmt.Sprintf("%s/index.php/vod/play/id/%s.html", base, sourceID),
+			fmt.Sprintf("%s/index.php/vod/detail/id/%s.html", base, sourceID),
+		}
 	case source == sourceMiguo:
 		return []string{
 			fmt.Sprintf("%s/index.php/vod/detail/id/%s.html", base, sourceID),
@@ -827,6 +845,10 @@ func (d *Downloader) searchMaccms(ctx context.Context, source, query string) ([]
 		address = fmt.Sprintf("%s/search/%s----------1---.html", base, url.PathEscape(query))
 	case source == sourceMiguo:
 		address = fmt.Sprintf("%s/index.php/vod/search/wd/%s.html", base, url.PathEscape(query))
+	case source == sourceTaoguo:
+		address = fmt.Sprintf("%s/index.php/vod/search/wd/%s.html", base, url.PathEscape(query))
+	case source == sourceYanguo:
+		address = fmt.Sprintf("%s/index.php/vod/search.html?wd=%s", base, url.QueryEscape(query))
 	case isCustomMaccmsSource(source):
 		// XBPQ 规则源：搜索走规则「搜索url」。
 		if rule, ok := customXBPQRule(source); ok {

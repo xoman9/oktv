@@ -123,6 +123,8 @@ type nativeInput struct {
 	Category         string                  `json:"category"`
 	Drama            nativeDrama             `json:"drama"`
 	Chapter          Chapter                 `json:"chapter"`
+	Library          *nativeLibraryExchange  `json:"library"`
+	Payload          string                  `json:"payload"`
 	Index            int                     `json:"index"`
 	Quality          int                     `json:"quality"`
 	Route            int                     `json:"route"`
@@ -305,6 +307,8 @@ func newNativeEngine(directory string) (*nativeEngine, error) {
 	return engine, nil
 }
 
+const nativeLibraryRequestLimit = 48 << 20
+
 func NativeRequest(raw string) (result string) {
 	defer func() {
 		if recover() != nil {
@@ -312,7 +316,15 @@ func NativeRequest(raw string) (result string) {
 		}
 	}()
 	var input nativeInput
-	if len(raw) > 1<<20 || json.Unmarshal([]byte(raw), &input) != nil {
+	limit := 1 << 20
+  if len(raw) > limit && len(raw) <= nativeLibraryRequestLimit {
+    var probe struct { Action string `json:"action"` }
+    if json.Unmarshal([]byte(raw), &probe) == nil &&
+      (probe.Action == "libraryImport" || probe.Action == "libraryImportXZ") {
+      limit = nativeLibraryRequestLimit
+    }
+  }
+  if len(raw) > limit || json.Unmarshal([]byte(raw), &input) != nil {
 		return `{"ok":false,"error":"请求格式无效"}`
 	}
 	data, err := nativeDispatch(input)
@@ -464,8 +476,22 @@ func nativeDispatch(input nativeInput) (any, error) {
 	case "controlDownloads":
 		return true, engine.downloads.control(input.JobID, input.Command)
 	case "localPlayback":
-		plan, _, err := engine.downloads.localPlan(input.Drama.ID, input.Index)
-		return plan, err
+        plan, _, err := engine.downloads.localPlan(input.Drama.ID, input.Index)
+        return plan, err
+    case "libraryExport":
+        return engine.nativeLibraryExport(), nil
+    case "libraryExportXZ":
+        payload, count, err := engine.nativeLibraryExportXZ()
+        if err != nil { return nil, err }
+        return map[string]any{"format":"xz","payload":payload,"count":count}, nil
+    case "libraryImportXZ":
+        document, err := nativeLibraryImportXZ(input.Payload)
+        if err != nil { return nil, err }
+        if document.Version != nativeLibraryExchangeVersion || len(document.Dramas)>nativeLibraryExchangeEntries {return nil, errors.New("剧库格式或条目数量无效")}
+        return engine.nativeLibraryImport(document)
+    case "libraryImport":
+        if input.Library == nil || input.Library.Version != nativeLibraryExchangeVersion || len(input.Library.Dramas)>nativeLibraryExchangeEntries {return nil, errors.New("剧库格式或条目数量无效")}
+        return engine.nativeLibraryImport(*input.Library)
 	case "catalog":
 		return engine.nativeCatalog(ctx, input)
 	case "searchAcross":

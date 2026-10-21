@@ -46,21 +46,17 @@ func (engine *nativeEngine) storage() (nativeStorageInfo, error) {
 }
 
 func nativeDownloadLocation(directory string) string {
-	var value struct {
-		Directory string `json:"directory"`
-	}
-	body, _ := os.ReadFile(filepath.Join(directory, "download-location.json"))
-	if json.Unmarshal(body, &value) == nil && filepath.IsAbs(value.Directory) {
-		return filepath.Clean(value.Directory)
-	}
-	legacy := filepath.Join(directory, "downloads")
+    // Android fresh-install policy: ignore legacy download roots and saved
+    // download-location.json; use the shared folder requested by the user.
     if strings.HasPrefix(directory, "/data/user/") || strings.HasPrefix(directory, "/data/data/") {
-        // Keep existing downloads until the user explicitly migrates them.
-        if _, err := os.Stat(filepath.Join(legacy, "index.json")); err == nil { return legacy }
-        shared := "/storage/emulated/0/Download/duanju"
-        if err := os.MkdirAll(shared, 0700); err == nil { return shared }
+        return "/storage/emulated/0/Download/duanju"
     }
-    return legacy
+    var saved struct { Directory string `json:"directory"` }
+    body, _ := os.ReadFile(filepath.Join(directory, "download-location.json"))
+    if json.Unmarshal(body, &saved) == nil && filepath.IsAbs(saved.Directory) {
+        return filepath.Clean(saved.Directory)
+    }
+    return filepath.Join(directory, "downloads")
 }
 
 func nativeCopyTree(ctx context.Context, source, target string) error {

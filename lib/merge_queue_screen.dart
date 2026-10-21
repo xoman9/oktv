@@ -148,6 +148,14 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
         ),
       );
       if (accepted != true || !mounted || !_allowed) return;
+      if (skipVerification && Platform.isAndroid && !(await ensureSharedMergeStorage())) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('請在系統設定允許所有檔案存取權限，返回後重新加入快速合併')),
+          );
+        }
+        return;
+      }
       final count = await widget.library.merges.enqueue([
         for (final id in selected) groups[id]!,
       ], cleanup: cleanup, skipVerification: skipVerification);

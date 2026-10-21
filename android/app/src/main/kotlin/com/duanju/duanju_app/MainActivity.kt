@@ -8,6 +8,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.BatteryManager
 import android.os.PowerManager
+import android.os.Environment
+import android.provider.Settings
 import android.os.SystemClock
 import android.content.Context
 import android.content.Intent
@@ -159,6 +161,23 @@ class MainActivity : FlutterActivity() {
             .also { channel ->
                 channel.setMethodCallHandler { call, result ->
                     when (call.method) {
+                        "sharedStorageAccess" -> {
+                            result.success(Build.VERSION.SDK_INT < Build.VERSION_CODES.R ||
+                                Environment.isExternalStorageManager())
+                        }
+                        "requestSharedStorageAccess" -> {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                                !Environment.isExternalStorageManager()) {
+                                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                                    Uri.parse("package:$packageName"))
+                                try {
+                                    startActivity(intent)
+                                    result.success(false)
+                                } catch (failure: Exception) {
+                                    result.error("storage_permission", "无法开启所有文件访问权限设置", null)
+                                }
+                            } else result.success(true)
+                        }
                         "deviceInfo" -> {
                             val version = packageManager.getPackageInfo(packageName, 0).versionName
                             result.success(mapOf("television" to isTelevisionDevice(), "version" to version))

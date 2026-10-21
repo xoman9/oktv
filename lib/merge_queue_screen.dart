@@ -70,6 +70,7 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
       }
       final selected = <String>{};
       var cleanup = false;
+      var skipVerification = true;
       final accepted = await showDialog<bool>(
         context: context,
         builder: (context) => StatefulBuilder(
@@ -114,10 +115,19 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
                   ),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
+                    value: skipVerification,
+                    title: const Text('免驗證快速合併'),
+                    onChanged: (value) => change(() {
+                      skipVerification = value == true;
+                      if (skipVerification) cleanup = false;
+                    }),
+                  ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
                     value: cleanup,
                     title: const Text('完成后删除原分集'),
                     subtitle: const Text('仅在成品通过完整解码并保存后删除；默认保留原视频。'),
-                    onChanged: (value) => change(() => cleanup = value == true),
+                    onChanged: skipVerification ? null : (value) => change(() => cleanup = value == true),
                   ),
                 ],
               ),
@@ -140,7 +150,7 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
       if (accepted != true || !mounted || !_allowed) return;
       final count = await widget.library.merges.enqueue([
         for (final id in selected) groups[id]!,
-      ], cleanup: cleanup);
+      ], cleanup: cleanup, skipVerification: skipVerification);
       if (mounted) {
         ScaffoldMessenger.of(
           context,

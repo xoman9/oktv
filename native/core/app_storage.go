@@ -53,7 +53,14 @@ func nativeDownloadLocation(directory string) string {
 	if json.Unmarshal(body, &value) == nil && filepath.IsAbs(value.Directory) {
 		return filepath.Clean(value.Directory)
 	}
-	return filepath.Join(directory, "downloads")
+	legacy := filepath.Join(directory, "downloads")
+    if strings.HasPrefix(directory, "/data/user/") || strings.HasPrefix(directory, "/data/data/") {
+        // Keep existing downloads until the user explicitly migrates them.
+        if _, err := os.Stat(filepath.Join(legacy, "index.json")); err == nil { return legacy }
+        shared := "/storage/emulated/0/Download/duanju"
+        if err := os.MkdirAll(shared, 0700); err == nil { return shared }
+    }
+    return legacy
 }
 
 func nativeCopyTree(ctx context.Context, source, target string) error {
@@ -128,6 +135,9 @@ func (engine *nativeEngine) moveDownloads(ctx context.Context, parent string) er
 	}
 	defer engine.mu.Unlock()
 	target := filepath.Join(filepath.Clean(parent), "zhenguojian-downloads")
+    if filepath.Clean(parent) == "/storage/emulated/0/Download/duanju" {
+        target = filepath.Clean(parent)
+    }
 	manager.mu.Lock()
 	if manager.loadErr != nil {
 		manager.mu.Unlock()
@@ -148,10 +158,24 @@ func (engine *nativeEngine) moveDownloads(ctx context.Context, parent string) er
 		manager.mu.Unlock()
 		return errors.New("新目录不能与原下载目录互相包含")
 	}
-	if _, err := os.Stat(target); !os.IsNotExist(err) {
-		manager.mu.Unlock()
-		return errors.New("目标中已有应用下载目录，请选择空目录，避免覆盖文件")
-	}
+	if info, err := os.Stat(target); err == nil {
+        if target != "/storage/emulated/0/Download/duanju" || !info.IsDir() {
+            manager.mu.Unlock()
+            return errors.New("目标中已有应用下载目录，请选择空目录，避免覆盖文件")
+        }
+        entries, readErr := os.ReadDir(target)
+        if readErr != nil || len(entries) != 0 {
+            manager.mu.Unlock()
+            return errors.New("共用下载目录已含文件，暂不自动覆盖或合并；请先清空目标或另选目录")
+        }
+        if err := os.Remove(target); err != nil {
+            manager.mu.Unlock()
+            return errors.New("无法准备共用下载目录")
+        }
+    } else if !os.IsNotExist(err) {
+        manager.mu.Unlock()
+        return errors.New("无法检查目标下载目录")
+    }
 	manager.moving = true
 	for id, job := range manager.jobs {
 		if job.State == "queued" || job.State == "downloading" {

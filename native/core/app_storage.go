@@ -49,6 +49,11 @@ func nativeDownloadLocation(directory string) string {
     // Android fresh-install policy: ignore legacy download roots and saved
     // download-location.json; use the shared folder requested by the user.
     if strings.HasPrefix(directory, "/data/user/") || strings.HasPrefix(directory, "/data/data/") {
+        // The Android framework resolves its real external storage root; never
+        // assume the emulated user-volume number or casing.
+        if root := os.Getenv("EXTERNAL_STORAGE"); filepath.IsAbs(root) {
+            return filepath.Join(root, "Download", "duanju")
+        }
         return "/storage/emulated/0/Download/duanju"
     }
     var saved struct { Directory string `json:"directory"` }

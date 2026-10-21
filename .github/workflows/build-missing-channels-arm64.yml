@@ -38,7 +38,7 @@ jobs:
           yes | "$SDKM_BIN/sdkmanager" --licenses > /dev/null || true
           "$SDKM_BIN/sdkmanager" 'ndk;28.2.13676358'
       - name: Unit tests for migrated sources
-        run: go test ./core -run TestMiguoSourceRegistration -count=1
+        run: go test ./core -run 'Test(MiguoSourceRegistration|ZhenguoAddedMacCMSSources|ZhenguoYouguoLiuguoRegistration)' -count=1
         working-directory: native
       - name: Configure signing
         run: python scripts/configure_signing.py

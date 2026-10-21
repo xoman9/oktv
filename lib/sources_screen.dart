@@ -725,8 +725,14 @@ class _SourceVisibilityScreenState extends State<SourceVisibilityScreen> {
         appBar: AppBar(
           title: const Text('源显示列表'),
           actions: [
-            TextButton(
+            FilledButton(
               key: const ValueKey('visibility-adult-toggle'),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFFDCD6),
+                foregroundColor: const Color(0xFF692D25),
+                disabledBackgroundColor: const Color(0xFFF5DFDA),
+                shape: const StadiumBorder(),
+              ),
               onPressed: _adultSwitchPending || adult.isEmpty
                   ? null
                   : () => _toggleAdultSources(adult, adultHidden),
@@ -773,11 +779,6 @@ class _SourceVisibilityScreenState extends State<SourceVisibilityScreen> {
                           ),
                         for (final source in group.sources)
                           SwitchListTile(
-                            // Restore the original prominent oval track on every source row.
-                            activeColor: Colors.white,
-                            activeTrackColor: const Color(0xFFE83E32),
-                            inactiveThumbColor: Colors.white,
-                            inactiveTrackColor: const Color(0xFFFFD7D2),
                             secondary: const Icon(Icons.dns_outlined),
                             title: Text(
                               group.sources.length > 1

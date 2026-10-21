@@ -112,7 +112,8 @@ func (d *Downloader) searchDuanju(ctx context.Context, source, query string) ([]
 	case sourceNiuguo:
 		return d.searchNiuguo(ctx, query)
 	case sourceChaoguo:
-		return d.searchChaoguoPage(ctx, query)
+		items, _, err := d.searchChaoguoPage(ctx, query, 1)
+		return items, err
 	case sourceHuaguo, sourceFaguo, sourceWuguo, sourceWangguo, sourceMiguo, sourceTaoguo, sourceYanguo, sourceYouguo, sourceLiuguo, sourceMeiguo, sourceChengguo, sourceXiaoguo, sourceYingguo, sourceLuguo, sourceLiguo, sourceJuguo, sourceZaoguo, sourceNingguo, sourceMangguo:
 		return d.searchMaccms(ctx, source, query)
 	default:

@@ -51,7 +51,7 @@ extension MediaMergeOperations on MediaLibrary {
       final existing = _items
           .where(
             (item) =>
-                item.id == task.outputId && item.merged && item.decodeVerified,
+                item.id == task.outputId && item.merged && (item.decodeVerified || task.skipVerification),
           )
           .firstOrNull;
       if (existing != null &&
@@ -75,7 +75,7 @@ extension MediaMergeOperations on MediaLibrary {
         }
         jobs.add(job);
       }
-      return _mergeFiles(continuousMergeJobs(jobs), temporary, task.outputId);
+      return _mergeFiles(continuousMergeJobs(jobs), temporary, task.outputId, skipVerification: task.skipVerification);
     },
     workspace: task.id,
     sources: {task.drama.source},
@@ -119,8 +119,9 @@ extension MediaMergeOperations on MediaLibrary {
   Future<LocalMediaItem> _mergeFiles(
     List<DownloadJob> jobs,
     Directory temporary,
-    String id,
-  ) async {
+    String id, {
+    bool skipVerification = false,
+  }) async {
     final sources = <Object>[];
     for (final job in jobs) {
       _check();
@@ -140,7 +141,7 @@ extension MediaMergeOperations on MediaLibrary {
         _mergeDigest(plan.decryptionKey),
       ]);
     }
-    final fingerprint = _mergeDigest(['merge-v3', sources]);
+    final fingerprint = _mergeDigest(['merge-v3', sources, skipVerification]);
     final checkpointFile = File(path.join(temporary.path, 'checkpoint.json'));
     var checkpoint = <String, dynamic>{
       'fingerprint': fingerprint,
@@ -319,8 +320,10 @@ extension MediaMergeOperations on MediaLibrary {
     );
     _check();
     final checked = await executor.probe(output);
-    verifyMediaDuration(checked, duration);
-    await _decodeOutput(output, checked.duration);
+    if (!skipVerification) {
+      verifyMediaDuration(checked, duration);
+      await _decodeOutput(output, checked.duration);
+    }
     final relative = path.join('library', id, 'full.mkv');
     final target = File(path.join(root!, relative));
     await target.parent.create(recursive: true);
@@ -337,7 +340,7 @@ extension MediaMergeOperations on MediaLibrary {
       created: DateTime.now(),
       videoTranscodes: plan.videoTranscodes,
       audioTranscodes: plan.audioTranscodes,
-      decodeVerified: true,
+      decodeVerified: !skipVerification,
       sourceVersion: fingerprint,
     );
     final previous = List<LocalMediaItem>.of(_items);

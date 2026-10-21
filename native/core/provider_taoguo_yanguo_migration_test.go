@@ -4,8 +4,8 @@ import "testing"
 
 func TestZhenguoAddedMacCMSSources(t *testing.T) {
  for _, tc := range []struct{id, host, name string}{
-  {sourceTaoguo, "lujj31.buzz", "桃果"},
-  {sourceYanguo, "xqxq1.cc", "艷果"},
+  {sourceTaoguo, "lujj31.buzz", "桃果 🔞"},
+  {sourceYanguo, "xqxq1.cc", "艷果 🔞"},
  } {
   spec, ok := duanjuSourceSpecFor(tc.id)
   if !ok || spec.Name != tc.name || spec.Kind != "maccms" {t.Fatalf("%s registration: %+v %v",tc.id,spec,ok)}

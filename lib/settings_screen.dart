@@ -724,6 +724,7 @@ class _StorageScreenState extends State<StorageScreen> {
       final support = await getApplicationSupportDirectory();
       final directories = <String, String>{support.path: '应用内部存储'};
       if (Platform.isAndroid) {
+        directories['/storage/emulated/0/Download/duanju'] = '共用下載目錄 Download/duanju';
         final external = await getExternalStorageDirectories() ?? [];
         for (var i = 0; i < external.length; i++) {
           directories[external[i].path] = i == 0
@@ -752,6 +753,15 @@ class _StorageScreenState extends State<StorageScreen> {
       parent = await FilePicker.getDirectoryPath(dialogTitle: '选择下载保存位置');
     }
     if (parent == null || !mounted) return;
+    if (Platform.isAndroid && parent == '/storage/emulated/0/Download/duanju') {
+      const channel = MethodChannel('duanju/device');
+      final allowed = await channel.invokeMethod<bool>('sharedStorageAccess') ?? false;
+      if (!allowed) {
+        await channel.invokeMethod<bool>('requestSharedStorageAccess');
+        if (mounted) setState(() => _error = '請在系統設定允許所有檔案存取權限，返回後再選擇共用下載目錄');
+        return;
+      }
+    }
     final yes = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

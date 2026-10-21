@@ -5,6 +5,8 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:flutter/services.dart';
+
 import 'package:ffi/ffi.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -796,6 +798,14 @@ class NativeRepository extends AppRepository {
 
   @override
   Future<void> initialize() async {
+    if (Platform.isAndroid && !background) {
+      const storage = MethodChannel('duanju/device');
+      final granted = await storage.invokeMethod<bool>('sharedStorageAccess') ?? false;
+      if (!granted) {
+        await storage.invokeMethod<bool>('requestSharedStorageAccess');
+        throw AppFailure('請授予所有檔案存取權限，返回 APP 後按重新嘗試；下載目錄將使用 Download/duanju');
+      }
+    }
     final directory = await getApplicationSupportDirectory();
     final build = await _call({
       'action': 'initialize',

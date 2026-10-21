@@ -81,6 +81,8 @@ var sourceNames = []struct {
 	{"faguo", "发果"},
 	{"wuguo", "伍果"},
 	{"miguo", "米果"},
+	{"taoguo", "桃果"},
+	{"yanguo", "艷果"},
 }
 
 var lastSequence atomic.Int64

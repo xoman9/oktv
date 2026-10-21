@@ -19,6 +19,8 @@ const (
 	sourceFaguo   = "faguo"
 	sourceWuguo   = "wuguo"
 	sourceMiguo   = "miguo"
+	sourceTaoguo = "taoguo"
+	sourceYanguo = "yanguo"
 
 	duanjuMaxBodyBytes = 8 * 1024 * 1024
 	duanjuUserAgent    = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
@@ -41,6 +43,8 @@ var (
 	faguoBaseURL    = "https://www.xzyx168.com"
 	wuguoBaseURL    = "https://www.duanju55.com"
 	miguoBaseURL    = "https://dmxq40.com"
+	taoguoBaseURL = "https://lujj31.buzz"
+	yanguoBaseURL = "https://xqxq1.cc"
 )
 
 type duanjuSourceSpec struct {
@@ -68,6 +72,8 @@ var duanjuProviderCatalog = []duanjuSourceSpec{
 	{ID: sourceFaguo, Name: "发果", Base: faguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceWuguo, Name: "伍果", Base: wuguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceMiguo, Name: "米果", Base: miguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
+	{ID: sourceTaoguo, Name: "桃果", Base: taoguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
+	{ID: sourceYanguo, Name: "艷果", Base: yanguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 }
 
 var duanjuMarkupPattern = regexp.MustCompile(`<[^>]{1,80}>`)
@@ -101,6 +107,8 @@ var duanjuSourceAliases = map[string]string{
 	"faguo": "faguo", "168": sourceFaguo, "xzyx168": sourceFaguo, "www.xzyx168.com": sourceFaguo,
 	"wuguo": "wuguo", "wuwu": sourceWuguo, "五五": sourceWuguo, "www.duanju55.com": sourceWuguo,
 	"miguo": sourceMiguo, "米果": sourceMiguo, "dmxq40.com": sourceMiguo, "www.dmxq40.com": sourceMiguo,
+	"taoguo": sourceTaoguo, "桃果": sourceTaoguo, "lujj31.buzz": sourceTaoguo,
+	"yanguo": sourceYanguo, "艷果": sourceYanguo, "艳果": sourceYanguo, "xqxq1.cc": sourceYanguo,
 }
 
 var duanjuSourcesByName = func() map[string]duanjuSourceSpec {
@@ -174,6 +182,10 @@ func duanjuSourceForHost(host string) string {
 		return sourceWuguo
 	case host == "dmxq40.com" || host == "www.dmxq40.com":
 		return sourceMiguo
+	case host == "lujj31.buzz" || host == "www.lujj31.buzz":
+		return sourceTaoguo
+	case host == "xqxq1.cc" || host == "www.xqxq1.cc":
+		return sourceYanguo
 	default:
 		return ""
 	}
@@ -206,6 +218,8 @@ type duanjuCategory struct {
 }
 
 var duanjuStaticCategories = map[string][]duanjuCategory{
+	sourceTaoguo: {{ID: "1", Name: "全部"}},
+	sourceYanguo: {{ID: "1", Name: "全部"}},
 	sourceYaguo: {
 		{ID: "1", Name: "剧场"},
 		{ID: "9", Name: "榜单"},

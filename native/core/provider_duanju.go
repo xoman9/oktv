@@ -23,6 +23,17 @@ const (
 	sourceYanguo = "yanguo"
 	sourceYouguo = "youguo"
 	sourceLiuguo = "liuguo"
+	sourceMeiguo = "meiguo"
+	sourceChengguo = "chengguo"
+	sourceXiaoguo = "xiaoguo"
+	sourceYingguo = "yingguo"
+	sourceLuguo = "luguo"
+	sourceLiguo = "liguo"
+	sourceJuguo = "juguo"
+	sourceZaoguo = "zaoguo"
+	sourceNingguo = "ningguo"
+	sourceMangguo = "mangguo"
+	sourceChaoguo = "chaoguo"
 
 	duanjuMaxBodyBytes = 8 * 1024 * 1024
 	duanjuUserAgent    = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
@@ -49,6 +60,17 @@ var (
 	yanguoBaseURL = "https://xqxq1.cc"
 	youguoBaseURL = "https://youavhub.com"
 	liuguoBaseURL = "https://www.llsp.me"
+	meiguoBaseURL = "https://shiresm.lol"
+	chengguoBaseURL = "https://a.qingyiduz.xyz"
+	xiaoguoBaseURL = "https://yese.co"
+	yingguoBaseURL = "https://missav02.xyz"
+	luguoBaseURL = "https://luyitian.com"
+	liguoBaseURL = "https://ririlu.cc"
+	juguoBaseURL = "https://4tw3gy653a.bulunhufait.buzz"
+	zaoguoBaseURL = "https://www.yhsp5.yachts/cn/home/web"
+	ningguoBaseURL = "https://toptv15.cyou"
+	mangguoBaseURL = "https://zsrqab03.zsrenqi.xyz"
+	chaoguoBaseURL = "https://www.shanekids.com"
 )
 
 type duanjuSourceSpec struct {
@@ -80,6 +102,17 @@ var duanjuProviderCatalog = []duanjuSourceSpec{
 	{ID: sourceYanguo, Name: "艷果", Base: yanguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceYouguo, Name: "柚果", Base: youguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceLiuguo, Name: "榴果", Base: liuguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
+	{ID: sourceMeiguo, Name: "美果", Base: meiguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
+	{ID: sourceChengguo, Name: "城果", Base: chengguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
+	{ID: sourceXiaoguo, Name: "宵果", Base: xiaoguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
+	{ID: sourceYingguo, Name: "櫻果", Base: yingguoBaseURL, Kind: "maccms", Searcher: true, Paged: false},
+	{ID: sourceLuguo, Name: "露果", Base: luguoBaseURL, Kind: "maccms", Searcher: true, Paged: false},
+	{ID: sourceLiguo, Name: "荔果", Base: liguoBaseURL, Kind: "maccms", Searcher: true, Paged: false},
+	{ID: sourceJuguo, Name: "橘果", Base: juguoBaseURL, Kind: "maccms", Searcher: true, Paged: false},
+	{ID: sourceZaoguo, Name: "棗果", Base: zaoguoBaseURL, Kind: "maccms", Searcher: true, Paged: false},
+	{ID: sourceNingguo, Name: "檸果", Base: ningguoBaseURL, Kind: "maccms", Searcher: true, Paged: false},
+	{ID: sourceMangguo, Name: "芒果", Base: mangguoBaseURL, Kind: "maccms", Searcher: true, Paged: false},
+	{ID: sourceChaoguo, Name: "超果", Base: chaoguoBaseURL, Kind: "web", Searcher: true, Paged: true},
 }
 
 var duanjuMarkupPattern = regexp.MustCompile(`<[^>]{1,80}>`)
@@ -117,6 +150,17 @@ var duanjuSourceAliases = map[string]string{
 	"yanguo": sourceYanguo, "艷果": sourceYanguo, "艳果": sourceYanguo, "xqxq1.cc": sourceYanguo,
 	"youguo": sourceYouguo, "柚果": sourceYouguo, "youavhub.com": sourceYouguo, "www.youavhub.com": sourceYouguo,
 	"liuguo": sourceLiuguo, "榴果": sourceLiuguo, "llsp.me": sourceLiuguo, "www.llsp.me": sourceLiuguo,
+"meiguo": sourceMeiguo, "美果": sourceMeiguo, "shiresm.lol": sourceMeiguo,
+"chengguo": sourceChengguo, "城果": sourceChengguo, "a.qingyiduz.xyz": sourceChengguo,
+"xiaoguo": sourceXiaoguo, "宵果": sourceXiaoguo, "yese.co": sourceXiaoguo,
+"yingguo": sourceYingguo, "櫻果": sourceYingguo, "missav02.xyz": sourceYingguo,
+"luguo": sourceLuguo, "露果": sourceLuguo, "luyitian.com": sourceLuguo,
+"liguo": sourceLiguo, "荔果": sourceLiguo, "ririlu.cc": sourceLiguo,
+"juguo": sourceJuguo, "橘果": sourceJuguo, "4tw3gy653a.bulunhufait.buzz": sourceJuguo,
+"zaoguo": sourceZaoguo, "棗果": sourceZaoguo, "www.yhsp5.yachts": sourceZaoguo,
+"ningguo": sourceNingguo, "檸果": sourceNingguo, "toptv15.cyou": sourceNingguo,
+"mangguo": sourceMangguo, "芒果": sourceMangguo, "zsrqab03.zsrenqi.xyz": sourceMangguo,
+"chaoguo": sourceChaoguo, "超果": sourceChaoguo, "www.shanekids.com": sourceChaoguo,
 }
 
 var duanjuSourcesByName = func() map[string]duanjuSourceSpec {
@@ -198,6 +242,28 @@ func duanjuSourceForHost(host string) string {
 		return sourceYouguo
 	case host == "llsp.me" || host == "www.llsp.me":
 		return sourceLiuguo
+	case host == "shiresm.lol":
+		return sourceMeiguo
+	case host == "a.qingyiduz.xyz":
+		return sourceChengguo
+	case host == "yese.co":
+		return sourceXiaoguo
+	case host == "missav02.xyz":
+		return sourceYingguo
+	case host == "luyitian.com":
+		return sourceLuguo
+	case host == "ririlu.cc":
+		return sourceLiguo
+	case host == "4tw3gy653a.bulunhufait.buzz":
+		return sourceJuguo
+	case host == "www.yhsp5.yachts":
+		return sourceZaoguo
+	case host == "toptv15.cyou":
+		return sourceNingguo
+	case host == "zsrqab03.zsrenqi.xyz":
+		return sourceMangguo
+	case host == "www.shanekids.com":
+		return sourceChaoguo
 	default:
 		return ""
 	}
@@ -230,6 +296,17 @@ type duanjuCategory struct {
 }
 
 var duanjuStaticCategories = map[string][]duanjuCategory{
+	sourceMeiguo: {{ID: "4", Name: "全部"}},
+	sourceChengguo: {{ID: "1", Name: "全部"}},
+	sourceXiaoguo: {{ID: "1", Name: "全部"}},
+	sourceYingguo: {{ID: "28", Name: "全部"}},
+	sourceLuguo: {{ID: "26", Name: "全部"}},
+	sourceLiguo: {{ID: "28", Name: "全部"}},
+	sourceJuguo: {{ID: "66", Name: "全部"}},
+	sourceZaoguo: {{ID: "21", Name: "全部"}},
+	sourceNingguo: {{ID: "1", Name: "全部"}},
+	sourceMangguo: {{ID: "20", Name: "全部"}},
+
 	sourceTaoguo: {{ID: "1", Name: "全部"}},
 	sourceYanguo: {{ID: "1", Name: "全部"}},
 	sourceYaguo: {

@@ -807,6 +807,15 @@ class NativeRepository extends AppRepository {
       }
     }
     final directory = await getApplicationSupportDirectory();
+    if (Platform.isAndroid && !background) {
+      const channel = MethodChannel('duanju/device');
+      final selected = await channel.invokeMethod<String>('sharedDownloadDirectory');
+      if (selected == null || !path.isAbsolute(selected)) {
+        throw AppFailure('無法取得 Android 系統下載目錄');
+      }
+      await File(path.join(directory.path, 'android-download-root.json'))
+          .writeAsString(jsonEncode({'directory': selected}), flush: true);
+    }
     final build = await _call({
       'action': 'initialize',
       'directory': directory.path,

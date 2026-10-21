@@ -66,9 +66,6 @@ var sourceNames = []struct {
 	{"huangju", "剧果"},
 	{"yeguo", "野果"},
 	{"dsd", "帝果"},
-	{"huangguo-video", "黄果视频"},
-	{"huangguoai", "黄果 AI"},
-	{"cloudfront", "黄果旧版"},
 	{"yaguo", "芽果"},
 	{"maoguo", "猫果"},
 	{"fanguo", "饭果"},
@@ -81,6 +78,10 @@ var sourceNames = []struct {
 	{"faguo", "发果"},
 	{"wuguo", "伍果"},
 	{"miguo", "米果"},
+    {"chaoguo", "超果"},
+	{"huangguo-video", "黄果视频 🔞"},
+	{"huangguoai", "黄果 AI 🔞"},
+	{"cloudfront", "黄果旧版 🔞"},
 	{"taoguo", "桃果 🔞"},
 	{"yanguo", "艷果 🔞"},
 	{"youguo", "柚果 🔞"},
@@ -95,7 +96,6 @@ var sourceNames = []struct {
     {"zaoguo", "棗果 🔞"},
     {"ningguo", "檸果 🔞"},
     {"mangguo", "芒果 🔞"},
-    {"chaoguo", "超果"},
 }
 
 var lastSequence atomic.Int64

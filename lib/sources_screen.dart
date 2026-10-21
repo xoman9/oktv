@@ -690,13 +690,13 @@ class _SourceVisibilityScreenState extends State<SourceVisibilityScreen> {
     if (_adultSwitchPending || adult.isEmpty) return;
     setState(() => _adultSwitchPending = true);
     try {
-      await saveUserChange(context, () async {
-        for (final source in adult) {
-          if (widget.store.siteVisible(source.id) != show) {
-            await widget.store.setSiteVisible(source.id, show);
-          }
-        }
-      });
+      await saveUserChange(
+        context,
+        () => widget.store.setSitesVisible(
+          adult.map((source) => source.id),
+          show,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _adultSwitchPending = false);
     }

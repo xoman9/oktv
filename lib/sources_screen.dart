@@ -684,6 +684,24 @@ class SourceVisibilityScreen extends StatefulWidget {
 
 class _SourceVisibilityScreenState extends State<SourceVisibilityScreen> {
   final Set<String> _pending = {};
+  bool _adultSwitchPending = false;
+
+  Future<void> _toggleAdultSources(List<SourceSite> adult, bool show) async {
+    if (_adultSwitchPending || adult.isEmpty) return;
+    setState(() => _adultSwitchPending = true);
+    try {
+      await saveUserChange(context, () async {
+        for (final source in adult) {
+          if (widget.store.siteVisible(source.id) != show) {
+            await widget.store.setSiteVisible(source.id, show);
+          }
+        }
+      });
+    } finally {
+      if (mounted) setState(() => _adultSwitchPending = false);
+    }
+  }
+
 
   Future<void> _toggle(SourceSite source, bool visible) async {
     if (_pending.contains(source.id)) return;
@@ -701,8 +719,22 @@ class _SourceVisibilityScreenState extends State<SourceVisibilityScreen> {
     builder: (context, _) {
       final sources = widget.store.sources;
       final hidden = widget.store.hiddenSites;
+      final adult = sources.where((source) => source.name.contains('🔞')).toList();
+      final adultHidden = adult.every((source) => hidden.contains(source.id));
       return Scaffold(
-        appBar: AppBar(title: const Text('源显示列表')),
+        appBar: AppBar(
+          title: const Text('源显示列表'),
+          actions: [
+            TextButton(
+              key: const ValueKey('visibility-adult-toggle'),
+              onPressed: _adultSwitchPending || adult.isEmpty
+                  ? null
+                  : () => _toggleAdultSources(adult, adultHidden),
+              child: Text(adultHidden ? '成人頻道-開' : '成人頻道-關'),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720),
@@ -760,20 +792,6 @@ class _SourceVisibilityScreenState extends State<SourceVisibilityScreen> {
             ),
           ),
         ),
-        floatingActionButton: sources.isEmpty
-            ? null
-            : FloatingActionButton.extended(
-                key: const ValueKey('visibility-show-all'),
-                onPressed: () async {
-                  for (final source in sources) {
-                    if (hidden.contains(source.id)) {
-                      await _toggle(source, true);
-                    }
-                  }
-                },
-                icon: const Icon(Icons.visibility_rounded),
-                label: const Text('全部显示'),
-              ),
       );
     },
   );

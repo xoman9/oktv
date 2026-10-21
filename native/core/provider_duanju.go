@@ -112,7 +112,7 @@ var duanjuProviderCatalog = []duanjuSourceSpec{
 	{ID: sourceZaoguo, Name: "棗果 🔞", Base: zaoguoBaseURL, Kind: "maccms", Searcher: true, Paged: false},
 	{ID: sourceNingguo, Name: "檸果 🔞", Base: ningguoBaseURL, Kind: "maccms", Searcher: true, Paged: false},
 	{ID: sourceMangguo, Name: "芒果 🔞", Base: mangguoBaseURL, Kind: "maccms", Searcher: true, Paged: false},
-	{ID: sourceChaoguo, Name: "超果", Base: chaoguoBaseURL, Kind: "web", Searcher: true, Paged: true},
+	{ID: sourceChaoguo, Name: "超果 🔞", Base: chaoguoBaseURL, Kind: "web", Searcher: true, Paged: true},
 }
 
 var duanjuMarkupPattern = regexp.MustCompile(`<[^>]{1,80}>`)

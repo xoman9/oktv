@@ -75,7 +75,7 @@ class SourceSite {
     'huangguo-video' || 'huangguoai' || 'cloudfront' => 'huangguo',
     _ => id,
   };
-  String get groupName => groupId == 'huangguo' ? '黄果' : name;
+  String get groupName => groupId == 'huangguo' ? '黄果 🔞' : name;
   String get entryName => switch (id) {
     'huangguo-video' => '视频',
     'huangguoai' => 'AI',
@@ -84,7 +84,7 @@ class SourceSite {
   };
 
   static const hongguo = SourceSite('hongguo', '红果', '短剧 · 漫剧 · AI 剧');
-  static const dsd = SourceSite('dsd', '帝果', '分类视频 · 在线搜索');
+  static const dsd = SourceSite('dsd', '帝果 🔞', '分类视频 · 在线搜索');
   static const guipian = SourceSite('guipian', '鬼片', '鬼片 · 电视剧 · 动漫');
   static const ikanbot = SourceSite(
     'ikanbot',
@@ -114,9 +114,9 @@ class SourceSite {
     SourceSite('faguo', '发果', '168 短剧 · 网页目录'),
     SourceSite('wuguo', '伍果', '五五短剧 · 网页目录'),
     SourceSite('miguo', '米果', '大米星球 · 网页目录'),
-    SourceSite('chaoguo', '超果', '网页目录'),
   ];
   static const adultDuanjuValues = [
+    SourceSite('chaoguo', '超果 🔞', '网页目录'),
     SourceSite('taoguo', '桃果 🔞', '成人内容 · 网页目录'),
     SourceSite('yanguo', '艷果 🔞', '成人内容 · 网页目录'),
     SourceSite('youguo', '柚果 🔞', '成人内容 · 网页目录'),
@@ -138,11 +138,11 @@ class SourceSite {
     a123,
     hanxiaoquan,
     guipian,
-    SourceSite('huangdou', '黄豆', '精选短剧'),
-    SourceSite('huangju', '剧果', '热门 · 最新 · 分类短剧'),
     SourceSite('yeguo', '野果', '分类短剧 · 在线搜索'),
-    dsd,
     ...duanjuValues,
+    SourceSite('huangdou', '黄豆 🔞', '精选短剧'),
+    SourceSite('huangju', '剧果 🔞', '热门 · 最新 · 分类短剧'),
+    dsd,
     SourceSite('huangguo-video', '黄果视频 🔞', '视频剧集'),
     SourceSite('huangguoai', '黄果 AI 🔞', 'AI 短剧'),
     SourceSite('cloudfront', '黄果旧版 🔞', '旧 API 剧库'),
@@ -154,11 +154,11 @@ class SourceSite {
     a123,
     hanxiaoquan,
     guipian,
-    SourceSite('huangdou', '黄豆', '精选短剧'),
-    SourceSite('huangju', '剧果', '热门 · 最新 · 分类短剧'),
     SourceSite('yeguo', '野果', '分类短剧 · 在线搜索'),
-    dsd,
     ...duanjuValues,
+    SourceSite('huangdou', '黄豆 🔞', '精选短剧'),
+    SourceSite('huangju', '剧果 🔞', '热门 · 最新 · 分类短剧'),
+    dsd,
     SourceSite('huangguo-video', '黄果视频 🔞', '视频剧集'),
     SourceSite('huangguoai', '黄果 AI 🔞', 'AI 短剧'),
     SourceSite('cloudfront', '黄果旧版 🔞', '旧 API 剧库'),

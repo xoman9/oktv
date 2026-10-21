@@ -160,6 +160,12 @@ class LocalStore extends ChangeNotifier {
     return _effectiveHiddenSites(_current);
   }
 
+  static const Set<String> _newVisibleDramaSources = {
+    'miguo', 'wuguo', 'faguo', 'wangguo', 'niuguo', 'huaguo',
+    'xingguo', 'heguo', 'guanguo', 'fanguo', 'maoguo', 'yeguo',
+    'yaguo',
+  };
+
   Set<String> _effectiveHiddenSites(String profileId) {
     final raw = _string(_key('hiddenSites', profileId));
     if (raw == null) {
@@ -170,7 +176,13 @@ class LocalStore extends ChangeNotifier {
       final stored = jsonDecode(raw);
       if (stored is List) {
         // 用户配置过（含手动设为全部可见的空列表）：以存档值为准。
-        return stored.whereType<String>().toSet();
+        final hidden = stored.whereType<String>().toSet();
+        // One-time migration of previously saved profiles to the new visible defaults.
+        // Subsequent manual switches are preserved after the marker is written.
+        if (_string(_key('visibleDramaDefaultsV2', profileId)) != 'done') {
+          hidden.removeAll(_newVisibleDramaSources);
+        }
+        return hidden;
       }
     } catch (_) {}
     // 存档损坏：同样落到默认隐藏集，避免退化为全可见。
@@ -198,7 +210,10 @@ class LocalStore extends ChangeNotifier {
       } else {
         next.add(source);
       }
-      await _commit({_key('hiddenSites'): jsonEncode(next.toList())});
+      await _commit({
+        _key('hiddenSites'): jsonEncode(next.toList()),
+        _key('visibleDramaDefaultsV2'): 'done',
+      });
       _notify();
     });
   }

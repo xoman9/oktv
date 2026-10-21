@@ -43,7 +43,11 @@ Future<void> _copyMergedToSharedDirectory(File original, Drama drama) async {
   if (!(await _mergedStorageChannel.invokeMethod<bool>('sharedStorageAccess') ?? false)) {
     throw AppFailure('尚未授予所有檔案存取權限，請到系統設定開啟後再重試合併；原檔已保留');
   }
-  final base = Directory('/storage/emulated/0/Download/duanju');
+  final systemDirectory = await _mergedStorageChannel.invokeMethod<String>('sharedDownloadDirectory');
+  if (systemDirectory == null || !path.isAbsolute(systemDirectory)) {
+    throw AppFailure('無法取得系統共用下載目錄');
+  }
+  final base = Directory(systemDirectory);
   final folder = Directory(path.join(base.path, _safeName(drama.title)));
   await folder.create(recursive: true);
   final baseName = _safeName(drama.title);

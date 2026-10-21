@@ -113,6 +113,7 @@ class SourceSite {
     SourceSite('wangguo', '网果', '短剧网站 · 网页目录'),
     SourceSite('faguo', '发果', '168 短剧 · 网页目录'),
     SourceSite('wuguo', '伍果', '五五短剧 · 网页目录'),
+    SourceSite('miguo', '米果', '大米星球 · 网页目录'),
   ];
   static const knownValues = [
     hongguo,
@@ -186,6 +187,7 @@ class SourceSite {
     'wangguo',
     'faguo',
     'wuguo',
+    'miguo',
   };
 }
 

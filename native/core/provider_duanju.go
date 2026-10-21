@@ -18,6 +18,7 @@ const (
 	sourceWangguo = "wangguo"
 	sourceFaguo   = "faguo"
 	sourceWuguo   = "wuguo"
+	sourceMiguo   = "miguo"
 
 	duanjuMaxBodyBytes = 8 * 1024 * 1024
 	duanjuUserAgent    = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
@@ -39,6 +40,7 @@ var (
 	wangguoBaseURL  = "https://www.duanju2.com"
 	faguoBaseURL    = "https://www.xzyx168.com"
 	wuguoBaseURL    = "https://www.duanju55.com"
+	miguoBaseURL    = "https://dmxq40.com"
 )
 
 type duanjuSourceSpec struct {
@@ -65,6 +67,7 @@ var duanjuProviderCatalog = []duanjuSourceSpec{
 	{ID: sourceWangguo, Name: "网果", Base: wangguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceFaguo, Name: "发果", Base: faguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceWuguo, Name: "伍果", Base: wuguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
+	{ID: sourceMiguo, Name: "米果", Base: miguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 }
 
 var duanjuMarkupPattern = regexp.MustCompile(`<[^>]{1,80}>`)
@@ -97,6 +100,7 @@ var duanjuSourceAliases = map[string]string{
 	"wangguo": "wangguo", "duanjuwangzhan": sourceWangguo, "短剧网站": sourceWangguo, "www.duanju2.com": sourceWangguo,
 	"faguo": "faguo", "168": sourceFaguo, "xzyx168": sourceFaguo, "www.xzyx168.com": sourceFaguo,
 	"wuguo": "wuguo", "wuwu": sourceWuguo, "五五": sourceWuguo, "www.duanju55.com": sourceWuguo,
+	"miguo": sourceMiguo, "米果": sourceMiguo, "dmxq40.com": sourceMiguo, "www.dmxq40.com": sourceMiguo,
 }
 
 var duanjuSourcesByName = func() map[string]duanjuSourceSpec {
@@ -168,6 +172,8 @@ func duanjuSourceForHost(host string) string {
 		return sourceFaguo
 	case host == "www.duanju55.com" || host == "duanju55.com":
 		return sourceWuguo
+	case host == "dmxq40.com" || host == "www.dmxq40.com":
+		return sourceMiguo
 	default:
 		return ""
 	}

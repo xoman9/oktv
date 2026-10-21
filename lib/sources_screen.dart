@@ -41,6 +41,8 @@ class _SourcesScreenState extends State<SourcesScreen> {
   final _statuses = <String, SourceStatus>{};
   final _errors = <String, String>{};
   final _pending = <String>{};
+  final _bulkSubmitted = <String>{};
+  bool _bulkUpdating = false;
   final _revisions = <String, int>{};
   final _expandedHealth = <String>{};
   Timer? _timer;
@@ -189,6 +191,38 @@ class _SourcesScreenState extends State<SourcesScreen> {
     }
   }
 
+  Future<void> _updateAllSources() async {
+    if (_bulkUpdating || !widget.repository.supportsSourceManagement) return;
+    final epoch = widget.store.profileEpoch;
+    final sources = widget.store.sources.toList();
+    setState(() {
+      _bulkUpdating = true;
+      _bulkSubmitted.clear();
+    });
+    try {
+      for (final source in sources) {
+        if (!mounted || epoch != widget.store.profileEpoch) break;
+        final status = _statuses[source.id];
+        if (_pending.contains(source.id) ||
+            status?.running == true ||
+            (status?.retrySeconds ?? 0) > 0) continue;
+        setState(() => _bulkSubmitted.add(source.id));
+        await _run(source, 'update');
+        if (_errors.containsKey(source.id) && mounted) {
+          setState(() => _bulkSubmitted.remove(source.id));
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _bulkUpdating = false;
+          _bulkSubmitted.clear();
+        });
+        await _refresh();
+      }
+    }
+  }
+
   Future<void> _copy(SourceSite source, SourceStatus status) async {
     final text = StringBuffer('${source.name}\n');
     text.writeln(
@@ -330,10 +364,26 @@ class _SourcesScreenState extends State<SourcesScreen> {
                       ),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      '各站源可分别更新和检测。更新会查找新剧、继续加载一页历史内容，并分批补齐资料；离开此页后任务继续。',
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            '各站源可分别更新和检测。更新会查找新剧、继续加载一页历史内容，并分批补齐资料；离开此页后任务继续。',
+                          ),
+                        ),
+                        IconButton(
+                          key: const ValueKey('update-all-sources'),
+                          tooltip: '全部更新',
+                          icon: const Icon(Icons.refresh_rounded),
+                          onPressed: (_bulkUpdating ||
+                                  !widget.repository.supportsSourceManagement ||
+                                  sources.isEmpty)
+                              ? null
+                              : _updateAllSources,
+                        ),
+                      ],
                     ),
                   ),
                   if (sources.isEmpty)
@@ -377,6 +427,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
     final status = _statuses[source.id];
     final pending = _pending.contains(source.id);
     final busy = pending || status?.running == true;
+    final bulkSubmitted = _bulkSubmitted.contains(source.id);
     final seconds = status?.retrySeconds ?? 0;
     final enabled =
         !busy && seconds == 0 && widget.repository.supportsSourceManagement;
@@ -419,7 +470,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
               children: [
                 FilledButton.icon(
                   key: ValueKey('update-${source.id}'),
-                  onPressed: enabled ? () => _run(source, 'update') : null,
+                  onPressed: enabled && !bulkSubmitted ? () => _run(source, 'update') : null,
                   icon: const Icon(Icons.sync_rounded),
                   label: const Text('更新'),
                 ),

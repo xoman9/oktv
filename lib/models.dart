@@ -65,17 +65,10 @@ class SourceSite {
     'wuguo',
   }.contains(id);
   bool get searchSuggestions => id == 'hongguo';
-  String get groupId => switch (id) {
-    'huangguo-video' || 'huangguoai' || 'cloudfront' => 'huangguo',
-    _ => id,
-  };
-  String get groupName => groupId == 'huangguo' ? '黄果 🔞' : name;
-  String get entryName => switch (id) {
-    'huangguo-video' => '视频',
-    'huangguoai' => 'AI',
-    'cloudfront' => '旧版',
-    _ => name,
-  };
+  // 黃果各線路在站源管理與頻道頁獨立顯示、獨立開關。
+  String get groupId => id;
+  String get groupName => name;
+  String get entryName => name;
 
   static const hongguo = SourceSite('hongguo', '红果', '短剧 · 漫剧 · AI 剧');
   static const dsd = SourceSite('dsd', '帝果 🔞', '分类视频 · 在线搜索');

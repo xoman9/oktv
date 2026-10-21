@@ -12,6 +12,7 @@ class MergeQueueJob {
     this.state = 'queued',
     this.error = '',
     this.cleanup = false,
+    this.skipVerification = false,
   });
   final String id, owner, state, error;
   final Drama drama;
@@ -20,6 +21,7 @@ class MergeQueueJob {
   final Map<String, String> versions;
   final DateTime created;
   final bool cleanup;
+  final bool skipVerification;
   String get outputId => 'merged-$id';
   bool get active =>
       state == 'queued' || state == 'running' || state == 'cleanup';
@@ -44,6 +46,7 @@ class MergeQueueJob {
     state: state ?? this.state,
     error: error ?? this.error,
     cleanup: cleanup,
+    skipVerification: skipVerification,
   );
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -56,6 +59,7 @@ class MergeQueueJob {
     'state': state,
     'error': error,
     'cleanup': cleanup,
+    'skipVerification': skipVerification,
   };
   factory MergeQueueJob.fromJson(Map<String, dynamic> data) {
     final id = data['id'] as String,
@@ -101,6 +105,7 @@ class MergeQueueJob {
       state: state,
       error: data['error'] as String? ?? '',
       cleanup: data['cleanup'] == true,
+      skipVerification: data['skipVerification'] == true,
     );
   }
 }
@@ -233,8 +238,10 @@ class MergeQueue {
   Future<int> enqueue(
     List<List<DownloadJob>> groups, {
     bool cleanup = false,
+    bool skipVerification = false,
   }) async {
     final epoch = library.store.profileEpoch;
+    if (skipVerification && cleanup) throw AppFailure('免验证快速合并不可删除原分集');
     if (!library.store.canDownload || groups.isEmpty || groups.length > 50) {
       throw AppFailure('一次请选择 1 至 50 部剧加入合并队列');
     }
@@ -279,6 +286,7 @@ class MergeQueue {
             versions: versions,
             created: DateTime.now(),
             cleanup: cleanup,
+            skipVerification: skipVerification,
           ),
         );
         count++;

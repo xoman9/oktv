@@ -55,7 +55,7 @@ func (d *Downloader) fetchDuanjuCatalogPage(ctx context.Context, source string, 
 		return d.fetchNiuguoCatalogPage(ctx, page, category)
 	case sourceChaoguo:
 		return d.fetchChaoguoCatalogPage(ctx, page, category)
-	case sourceHuaguo, sourceFaguo, sourceWuguo, sourceWangguo, sourceMiguo, sourceTaoguo, sourceYanguo, sourceYouguo, sourceLiuguo, sourceMeiguo, sourceChengguo, sourceXiaoguo, sourceYingguo, sourceLuguo, sourceLiguo, sourceJuguo, sourceZaoguo, sourceNingguo, sourceMangguo:
+	case sourceHuaguo, sourceFaguo, sourceWuguo, sourceWangguo, sourceMiguo, sourceShuangguo, sourceTaoguo, sourceYanguo, sourceYouguo, sourceLiuguo, sourceMeiguo, sourceChengguo, sourceXiaoguo, sourceYingguo, sourceLuguo, sourceLiguo, sourceJuguo, sourceZaoguo, sourceNingguo, sourceMangguo:
 		return d.fetchMaccmsCatalogPage(ctx, source, page, category)
 	default:
 		if isCustomMaccmsSource(source) {
@@ -84,7 +84,7 @@ func (d *Downloader) fetchDuanjuDetail(ctx context.Context, source, sourceID str
 		return d.fetchNiuguoDetail(ctx, sourceID)
 	case sourceChaoguo:
 		return d.fetchChaoguoDetail(ctx, sourceID)
-	case sourceHuaguo, sourceFaguo, sourceWuguo, sourceWangguo, sourceMiguo, sourceTaoguo, sourceYanguo, sourceYouguo, sourceLiuguo, sourceMeiguo, sourceChengguo, sourceXiaoguo, sourceYingguo, sourceLuguo, sourceLiguo, sourceJuguo, sourceZaoguo, sourceNingguo, sourceMangguo:
+	case sourceHuaguo, sourceFaguo, sourceWuguo, sourceWangguo, sourceMiguo, sourceShuangguo, sourceTaoguo, sourceYanguo, sourceYouguo, sourceLiuguo, sourceMeiguo, sourceChengguo, sourceXiaoguo, sourceYingguo, sourceLuguo, sourceLiguo, sourceJuguo, sourceZaoguo, sourceNingguo, sourceMangguo:
 		return d.fetchMaccmsDetail(ctx, source, sourceID)
 	default:
 		if isCustomMaccmsSource(source) {
@@ -114,7 +114,7 @@ func (d *Downloader) searchDuanju(ctx context.Context, source, query string) ([]
 	case sourceChaoguo:
 		items, _, err := d.searchChaoguoPage(ctx, query, 1)
 		return items, err
-	case sourceHuaguo, sourceFaguo, sourceWuguo, sourceWangguo, sourceMiguo, sourceTaoguo, sourceYanguo, sourceYouguo, sourceLiuguo, sourceMeiguo, sourceChengguo, sourceXiaoguo, sourceYingguo, sourceLuguo, sourceLiguo, sourceJuguo, sourceZaoguo, sourceNingguo, sourceMangguo:
+	case sourceHuaguo, sourceFaguo, sourceWuguo, sourceWangguo, sourceMiguo, sourceShuangguo, sourceTaoguo, sourceYanguo, sourceYouguo, sourceLiuguo, sourceMeiguo, sourceChengguo, sourceXiaoguo, sourceYingguo, sourceLuguo, sourceLiguo, sourceJuguo, sourceZaoguo, sourceNingguo, sourceMangguo:
 		return d.searchMaccms(ctx, source, query)
 	default:
 		if isCustomMaccmsSource(source) {

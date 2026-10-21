@@ -174,7 +174,12 @@ class MainActivity : FlutterActivity() {
                                     startActivity(intent)
                                     result.success(false)
                                 } catch (failure: Exception) {
-                                    result.error("storage_permission", "无法开启所有文件访问权限设置", null)
+                                    try {
+                                        startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+                                        result.success(false)
+                                    } catch (fallback: Exception) {
+                                        result.error("storage_permission", "无法开启所有文件访问权限设置", null)
+                                    }
                                 }
                             } else result.success(true)
                         }

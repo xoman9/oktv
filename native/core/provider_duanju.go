@@ -19,6 +19,7 @@ const (
 	sourceFaguo   = "faguo"
 	sourceWuguo   = "wuguo"
 	sourceMiguo   = "miguo"
+	sourceShuangguo = "shuangguo"
 	sourceTaoguo = "taoguo"
 	sourceYanguo = "yanguo"
 	sourceYouguo = "youguo"
@@ -56,6 +57,7 @@ var (
 	faguoBaseURL    = "https://www.xzyx168.com"
 	wuguoBaseURL    = "https://www.duanju55.com"
 	miguoBaseURL    = "https://dmxq40.com"
+	shuangguoBaseURL = "https://www.duanju2.com"
 	taoguoBaseURL = "https://lujj31.buzz"
 	yanguoBaseURL = "https://xqxq1.cc"
 	youguoBaseURL = "https://youavhub.com"
@@ -98,6 +100,7 @@ var duanjuProviderCatalog = []duanjuSourceSpec{
 	{ID: sourceFaguo, Name: "发果", Base: faguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceWuguo, Name: "伍果", Base: wuguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceMiguo, Name: "米果", Base: miguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
+	{ID: sourceShuangguo, Name: "爽果", Base: shuangguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceTaoguo, Name: "桃果 🔞", Base: taoguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceYanguo, Name: "艷果 🔞", Base: yanguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceYouguo, Name: "柚果 🔞", Base: youguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},

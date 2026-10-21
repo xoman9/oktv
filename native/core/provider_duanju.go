@@ -21,6 +21,8 @@ const (
 	sourceMiguo   = "miguo"
 	sourceTaoguo = "taoguo"
 	sourceYanguo = "yanguo"
+	sourceYouguo = "youguo"
+	sourceLiuguo = "liuguo"
 
 	duanjuMaxBodyBytes = 8 * 1024 * 1024
 	duanjuUserAgent    = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
@@ -45,6 +47,8 @@ var (
 	miguoBaseURL    = "https://dmxq40.com"
 	taoguoBaseURL = "https://lujj31.buzz"
 	yanguoBaseURL = "https://xqxq1.cc"
+	youguoBaseURL = "https://youavhub.com"
+	liuguoBaseURL = "https://www.llsp.me"
 )
 
 type duanjuSourceSpec struct {
@@ -74,6 +78,8 @@ var duanjuProviderCatalog = []duanjuSourceSpec{
 	{ID: sourceMiguo, Name: "米果", Base: miguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceTaoguo, Name: "桃果", Base: taoguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 	{ID: sourceYanguo, Name: "艷果", Base: yanguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
+	{ID: sourceYouguo, Name: "柚果", Base: youguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
+	{ID: sourceLiuguo, Name: "榴果", Base: liuguoBaseURL, Kind: "maccms", Searcher: true, Paged: true},
 }
 
 var duanjuMarkupPattern = regexp.MustCompile(`<[^>]{1,80}>`)
@@ -109,6 +115,8 @@ var duanjuSourceAliases = map[string]string{
 	"miguo": sourceMiguo, "米果": sourceMiguo, "dmxq40.com": sourceMiguo, "www.dmxq40.com": sourceMiguo,
 	"taoguo": sourceTaoguo, "桃果": sourceTaoguo, "lujj31.buzz": sourceTaoguo,
 	"yanguo": sourceYanguo, "艷果": sourceYanguo, "艳果": sourceYanguo, "xqxq1.cc": sourceYanguo,
+	"youguo": sourceYouguo, "柚果": sourceYouguo, "youavhub.com": sourceYouguo, "www.youavhub.com": sourceYouguo,
+	"liuguo": sourceLiuguo, "榴果": sourceLiuguo, "llsp.me": sourceLiuguo, "www.llsp.me": sourceLiuguo,
 }
 
 var duanjuSourcesByName = func() map[string]duanjuSourceSpec {
@@ -186,6 +194,10 @@ func duanjuSourceForHost(host string) string {
 		return sourceTaoguo
 	case host == "xqxq1.cc" || host == "www.xqxq1.cc":
 		return sourceYanguo
+	case host == "youavhub.com" || host == "www.youavhub.com":
+		return sourceYouguo
+	case host == "llsp.me" || host == "www.llsp.me":
+		return sourceLiuguo
 	default:
 		return ""
 	}

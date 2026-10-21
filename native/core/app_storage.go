@@ -158,23 +158,37 @@ func (engine *nativeEngine) moveDownloads(ctx context.Context, parent string) er
 		manager.mu.Unlock()
 		return errors.New("新目录不能与原下载目录互相包含")
 	}
-	if info, err := os.Stat(target); err == nil {
-        if target != "/storage/emulated/0/Download/duanju" || !info.IsDir() {
+	sharedTarget := target == "/storage/emulated/0/Download/duanju"
+    targetExists := false
+    if info, err := os.Stat(target); err == nil {
+        if !sharedTarget || !info.IsDir() {
             manager.mu.Unlock()
             return errors.New("目标中已有应用下载目录，请选择空目录，避免覆盖文件")
         }
-        entries, readErr := os.ReadDir(target)
-        if readErr != nil || len(entries) != 0 {
-            manager.mu.Unlock()
-            return errors.New("共用下载目录已含文件，暂不自动覆盖或合并；请先清空目标或另选目录")
-        }
-        if err := os.Remove(target); err != nil {
-            manager.mu.Unlock()
-            return errors.New("无法准备共用下载目录")
-        }
+        targetExists = true
     } else if !os.IsNotExist(err) {
         manager.mu.Unlock()
         return errors.New("无法检查目标下载目录")
+    }
+    // Existing shared folders may hold merged videos. Do not remove or overwrite
+    // any existing files when switching the actual download root.
+    if targetExists {
+        conflict := filepath.WalkDir(manager.root, func(name string, entry os.DirEntry, err error) error {
+            if err != nil { return err }
+            relativeName, err := filepath.Rel(manager.root, name)
+            if err != nil { return err }
+            destination := filepath.Join(target, relativeName)
+            if info, statErr := os.Lstat(destination); statErr == nil {
+                if !entry.IsDir() || !info.IsDir() {
+                    return errors.New("目标下载目录中已有同名文件，请先处理冲突以免覆盖")
+                }
+            } else if !os.IsNotExist(statErr) { return statErr }
+            return nil
+        })
+        if conflict != nil {
+            manager.mu.Unlock()
+            return conflict
+        }
     }
 	manager.moving = true
 	for id, job := range manager.jobs {
@@ -195,20 +209,22 @@ func (engine *nativeEngine) moveDownloads(ctx context.Context, parent string) er
 		return saveErr
 	}
 	source := manager.root
-	if err := os.Mkdir(target, 0700); err != nil {
-		return errors.New("无法创建目标目录，请检查权限或选择其他位置")
-	}
-	if err := nativeCopyTree(ctx, source, target); err != nil {
-		_ = os.RemoveAll(target)
-		return errors.New("文件迁移未完成，原文件已保留，请检查空间与目录权限")
-	}
-	if err := ctx.Err(); err != nil {
-		_ = os.RemoveAll(target)
-		return err
-	}
+	if !targetExists {
+        if err := os.Mkdir(target, 0700); err != nil {
+            return errors.New("无法创建目标目录，请检查权限或选择其他位置")
+        }
+    }
+    if err := nativeCopyTree(ctx, source, target); err != nil {
+        if !targetExists { _ = os.RemoveAll(target) }
+        return errors.New("文件迁移未完成，原文件已保留；可能存在部分新复制文件，请检查空间与目录权限")
+    }
+    if err := ctx.Err(); err != nil {
+        if !targetExists { _ = os.RemoveAll(target) }
+        return err
+    }
 	data, _ := json.Marshal(map[string]string{"directory": target})
 	if err := nativeDownloadWrite(filepath.Join(engine.directory, "download-location.json"), data); err != nil {
-		_ = os.RemoveAll(target)
+        if !targetExists { _ = os.RemoveAll(target) }
 		return errors.New("保存下载目录失败，原文件已保留")
 	}
 	manager.root = target

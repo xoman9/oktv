@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
@@ -9,6 +10,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import 'models.dart';
+import 'library_transfer.dart';
 import 'danmaku_models.dart';
 import 'background_downloads.dart';
 import 'local_store.dart';
@@ -204,6 +206,11 @@ abstract class AppRepository {
     int route = 0,
     bool adBlock = true,
   }) => resolve(drama, episode, quality: quality, route: route, adBlock: adBlock);
+  Future<Map<String, dynamic>> exportLibrary() async => throw AppFailure('当前环境不支持剧库导出');
+  Future<LibraryImportResult> importLibrary(Map<String, dynamic> document) async => throw AppFailure('当前环境不支持剧库导入');
+  Future<Uint8List> exportLibraryPackage() async => throw AppFailure('当前环境不支持剧库导出');
+  Future<LibraryImportResult> importLibraryPackage(Uint8List payload) async => throw AppFailure('当前环境不支持剧库导入');
+  int get libraryPackageCount => 0;
   Future<void> initialize();
   Future<CatalogPage> catalog(
     String source, {
@@ -487,6 +494,30 @@ class NativeRepository extends AppRepository {
       SourceStatus.fromJson(
         await _call({'action': 'cancelSourceJob', 'source': source}),
       );
+
+  @override
+  Future<Map<String, dynamic>> exportLibrary() => _call({'action': 'libraryExport'});
+
+  @override
+  Future<LibraryImportResult> importLibrary(Map<String, dynamic> document) async =>
+      LibraryImportResult.fromJson(await _call({'action': 'libraryImport', 'library': document}));
+
+  @override
+  Future<Uint8List> exportLibraryPackage() async {
+    final result = await _call({'action': 'libraryExportXZ'});
+    libraryPackageCount = (result['count'] as num?)?.toInt() ?? 0;
+    return base64Decode(result['payload'] as String? ?? '');
+  }
+
+  @override
+  int libraryPackageCount = 0;
+
+  @override
+  Future<LibraryImportResult> importLibraryPackage(Uint8List payload) async =>
+      LibraryImportResult.fromJson(await _call({
+        'action': 'libraryImportXZ',
+        'payload': base64Encode(payload),
+      }));
 
   @override
   Future<List<CustomSourceSite>> customSources() async {

@@ -148,6 +148,7 @@ var duanjuSourceAliases = map[string]string{
 	"wangguo": "wangguo", "duanjuwangzhan": sourceWangguo, "短剧网站": sourceWangguo, "www.duanju2.com": sourceWangguo,
 	"faguo": "faguo", "168": sourceFaguo, "xzyx168": sourceFaguo, "www.xzyx168.com": sourceFaguo,
 	"wuguo": "wuguo", "wuwu": sourceWuguo, "五五": sourceWuguo, "www.duanju55.com": sourceWuguo,
+	"shuangguo": sourceShuangguo, "爽果": sourceShuangguo,
 	"miguo": sourceMiguo, "米果": sourceMiguo, "dmxq40.com": sourceMiguo, "www.dmxq40.com": sourceMiguo,
 	"taoguo": sourceTaoguo, "桃果": sourceTaoguo, "lujj31.buzz": sourceTaoguo,
 	"yanguo": sourceYanguo, "艷果": sourceYanguo, "艳果": sourceYanguo, "xqxq1.cc": sourceYanguo,

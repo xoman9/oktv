@@ -447,6 +447,14 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 		} else {
 			address = fmt.Sprintf("%s%s/page/%d.html", base, strings.TrimSuffix(class, ".html"), page)
 		}
+	case source == sourceMeiguo || source == sourceChengguo || source == sourceXiaoguo || source == sourceZaoguo || source == sourceNingguo || source == sourceMangguo:
+		class := strings.TrimSpace(category); if class == "" { class = map[string]string{sourceMeiguo:"4",sourceChengguo:"1",sourceXiaoguo:"1",sourceZaoguo:"21",sourceNingguo:"1",sourceMangguo:"20"}[source] }
+		if page <= 1 { address = fmt.Sprintf("%s/index.php/vod/type/id/%s.html",base,url.PathEscape(class)) } else { address = fmt.Sprintf("%s/index.php/vod/type/id/%s/page/%d.html",base,url.PathEscape(class),page) }
+	case source == sourceYingguo || source == sourceLuguo || source == sourceLiguo:
+		class := strings.TrimSpace(category); if class == "" { class = map[string]string{sourceYingguo:"28",sourceLuguo:"26",sourceLiguo:"28"}[source] }
+		address = fmt.Sprintf("%s/vodtype/%s/",base,url.PathEscape(class))
+	case source == sourceJuguo:
+		class := strings.TrimSpace(category); if class == "" { class = "66" }; address=fmt.Sprintf("%s/index.php/vod/show/id/%s.html",base,url.PathEscape(class))
 	case source == sourceYouguo:
 		if page <= 1 { address = base + "/" } else { address = fmt.Sprintf("%s/page/%d/", base, page) }
 	case source == sourceLiuguo:
@@ -676,6 +684,12 @@ func maccmsDetailCandidates(source, base, sourceID string) []string {
 			fmt.Sprintf("%s/dramaDetail/%s.html", base, sourceID),
 			fmt.Sprintf("%s/detail/%s.html", base, sourceID),
 		}
+	case source == sourceMeiguo || source == sourceChengguo || source == sourceZaoguo || source == sourceNingguo || source == sourceMangguo:
+		return []string{fmt.Sprintf("%s/index.php/vod/play/id/%s/sid/1/nid/1.html",base,sourceID)}
+	case source == sourceXiaoguo:
+		return []string{fmt.Sprintf("%s/index.php/vod/detail/id/%s.html",base,sourceID),fmt.Sprintf("%s/index.php/vod/play/id/%s/sid/1/nid/1.html",base,sourceID)}
+	case source == sourceYingguo || source == sourceLuguo || source == sourceLiguo || source == sourceJuguo:
+		return []string{fmt.Sprintf("%s/vodplay/%s-1-1/",base,sourceID),fmt.Sprintf("%s/vodplay/%s-1-1.html",base,sourceID)}
 	case source == sourceYouguo:
 		return []string{fmt.Sprintf("%s/vod/%s.html", base, sourceID), fmt.Sprintf("%s/video/%s", base, sourceID)}
 	case source == sourceLiuguo:
@@ -855,6 +869,8 @@ func (d *Downloader) searchMaccms(ctx context.Context, source, query string) ([]
 		address = fmt.Sprintf("%s/index.php/vod/search/wd/%s.html", base, url.PathEscape(query))
 	case source == sourceTaoguo:
 		address = fmt.Sprintf("%s/index.php/vod/search/wd/%s.html", base, url.PathEscape(query))
+	case source == sourceMeiguo || source == sourceChengguo || source == sourceXiaoguo || source == sourceYingguo || source == sourceLuguo || source == sourceLiguo || source == sourceJuguo || source == sourceZaoguo || source == sourceNingguo || source == sourceMangguo:
+		address = fmt.Sprintf("%s/index.php/vod/search/wd/%s.html",base,url.PathEscape(query))
 	case source == sourceYouguo:
 		address = fmt.Sprintf("%s/index.php/vod/search/wd/%s/", base, url.PathEscape(query))
 	case source == sourceLiuguo:

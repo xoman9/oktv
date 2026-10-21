@@ -40,6 +40,11 @@ class SourceSite {
   final String description;
   bool get onlineSearch => id == 'hongguo' || pagedSearch || duanjuOnlineSearch;
   bool get duanjuOnlineSearch => const {
+    'yaguo', 'maoguo', 'fanguo', 'guanguo', 'heguo', 'xingguo',
+    'huaguo', 'niuguo', 'wangguo', 'faguo', 'wuguo', 'miguo',
+    'taoguo', 'yanguo', 'youguo', 'liuguo', 'meiguo', 'chengguo',
+    'xiaoguo', 'yingguo', 'luguo', 'liguo', 'juguo', 'zaoguo',
+    'ningguo', 'mangguo', 'chaoguo',
   }.contains(id);
   bool get pagedSearch =>
       id == 'huangju' ||

@@ -3,6 +3,7 @@ module duanjuapp/native
 go 1.25.0
 
 require (
+	github.com/ulikunitz/xz v0.5.17
 	github.com/bogdanfinn/fhttp v0.6.9
 	github.com/bogdanfinn/tls-client v1.16.0
 	github.com/nathanstitt/omnidoc v1.0.0

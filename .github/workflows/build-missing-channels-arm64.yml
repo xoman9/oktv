@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   android-arm64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
@@ -52,7 +52,7 @@ jobs:
       - name: Remove signing files
         if: always()
         run: python scripts/configure_signing.py --clean
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: quanjushijie-zhenguo-miguo-arm64
           path: dist/android/*

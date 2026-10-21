@@ -114,6 +114,9 @@ class SourceSite {
     SourceSite('faguo', '发果', '168 短剧 · 网页目录'),
     SourceSite('wuguo', '伍果', '五五短剧 · 网页目录'),
     SourceSite('miguo', '米果', '大米星球 · 网页目录'),
+    SourceSite('chaoguo', '超果', '网页目录'),
+  ];
+  static const adultDuanjuValues = [
     SourceSite('taoguo', '桃果 🔞', '成人内容 · 网页目录'),
     SourceSite('yanguo', '艷果 🔞', '成人内容 · 网页目录'),
     SourceSite('youguo', '柚果 🔞', '成人内容 · 网页目录'),
@@ -128,7 +131,6 @@ class SourceSite {
     SourceSite('zaoguo', '棗果 🔞', '成人内容 · 网页目录'),
     SourceSite('ningguo', '檸果 🔞', '成人内容 · 网页目录'),
     SourceSite('mangguo', '芒果 🔞', '成人内容 · 网页目录'),
-    SourceSite('chaoguo', '超果', '网页目录'),
   ];
   static const knownValues = [
     hongguo,
@@ -140,10 +142,11 @@ class SourceSite {
     SourceSite('huangju', '剧果', '热门 · 最新 · 分类短剧'),
     SourceSite('yeguo', '野果', '分类短剧 · 在线搜索'),
     dsd,
-    SourceSite('huangguo-video', '黄果视频', '视频剧集'),
-    SourceSite('huangguoai', '黄果 AI', 'AI 短剧'),
-    SourceSite('cloudfront', '黄果旧版', '旧 API 剧库'),
     ...duanjuValues,
+    SourceSite('huangguo-video', '黄果视频 🔞', '视频剧集'),
+    SourceSite('huangguoai', '黄果 AI 🔞', 'AI 短剧'),
+    SourceSite('cloudfront', '黄果旧版 🔞', '旧 API 剧库'),
+    ...adultDuanjuValues,
   ];
   static const allValues = [
     hongguo,
@@ -155,10 +158,11 @@ class SourceSite {
     SourceSite('huangju', '剧果', '热门 · 最新 · 分类短剧'),
     SourceSite('yeguo', '野果', '分类短剧 · 在线搜索'),
     dsd,
-    SourceSite('huangguo-video', '黄果视频', '视频剧集'),
-    SourceSite('huangguoai', '黄果 AI', 'AI 短剧'),
-    SourceSite('cloudfront', '黄果旧版', '旧 API 剧库'),
     ...duanjuValues,
+    SourceSite('huangguo-video', '黄果视频 🔞', '视频剧集'),
+    SourceSite('huangguoai', '黄果 AI 🔞', 'AI 短剧'),
+    SourceSite('cloudfront', '黄果旧版 🔞', '旧 API 剧库'),
+    ...adultDuanjuValues,
   ];
   static const values = allSourcesEnabled ? knownValues : [hongguo];
   /// 当前会话已注册的自定义源 ID，供可用性判断与站源归一化使用。

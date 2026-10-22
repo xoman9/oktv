@@ -571,7 +571,12 @@ class MediaLibrary extends ChangeNotifier {
       if (item == null) return;
       final file = File(fileFor(item));
       if (item.merged) {
-        if (await file.parent.exists()) {
+        // New merged files live at the download root. Never delete their
+        // parent directory: that would erase other downloaded dramas.
+        if (await file.exists()) await file.delete();
+        // Old releases stored a merged copy under library/<id>/full.mp4.
+        if (path.basename(file.parent.parent.path) == 'library' &&
+            await file.parent.exists()) {
           await file.parent.delete(recursive: true);
         }
       } else {

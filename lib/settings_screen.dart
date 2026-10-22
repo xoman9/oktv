@@ -777,6 +777,18 @@ class _StorageScreenState extends State<StorageScreen> {
         _error = null;
       });
       await widget.repository.changeDownloadDirectory(selected);
+      // Read the confirmed path from the native core, not from the picker;
+      // update the visible directory immediately before refreshing storage use.
+      final activeDirectory = await widget.repository.downloadDirectory();
+      if (mounted) {
+        setState(() {
+          _info = <String, dynamic>{
+            ...?_info,
+            'directory': activeDirectory,
+          };
+          _error = null;
+        });
+      }
       await _refresh();
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
@@ -824,7 +836,7 @@ class _StorageScreenState extends State<StorageScreen> {
                   padding: EdgeInsets.symmetric(vertical: 20),
                   child: LinearProgressIndicator(),
                 ),
-              if (_busy) const Text('正在迁移，请保持应用运行…'),
+              if (_busy) const Text('正在更新下載資料夾…'),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),

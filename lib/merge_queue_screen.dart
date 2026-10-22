@@ -83,11 +83,11 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('按已有的连续集数合并，每次最多加入 50 部。中断后可从保存的步骤继续。'),
+                  const Text('可從 1 集開始合併已下載的連續分集，不限制合併集數；中斷後可繼續。'),
                   const SizedBox(height: 8),
                   Expanded(
                     child: rows.isEmpty
-                        ? const Center(child: Text('请先下载至少两集连续视频'))
+                        ? const Center(child: Text('請先下載至少 1 集影片'))
                         : ListView.builder(
                             itemCount: rows.length,
                             itemBuilder: (_, index) {
@@ -103,8 +103,7 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
                                 onChanged: errors.containsKey(row.key)
                                     ? null
                                     : (value) => change(() {
-                                        if (value == true &&
-                                            selected.length < 50) {
+                                        if (value == true) {
                                           selected.add(row.key);
                                         } else {
                                           selected.remove(row.key);

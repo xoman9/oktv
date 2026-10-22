@@ -38,16 +38,15 @@ Future<bool> ensureSharedMergeStorage() async {
   return false;
 }
 
-Future<void> _copyMergedToSharedDirectory(File original, Drama drama) async {
+Future<void> _copyMergedToSharedDirectory(File original, Drama drama, String targetDirectory) async {
   if (!Platform.isAndroid) return;
   if (!(await _mergedStorageChannel.invokeMethod<bool>('sharedStorageAccess') ?? false)) {
     throw AppFailure('尚未授予所有檔案存取權限，請到系統設定開啟後再重試合併；原檔已保留');
   }
-  final systemDirectory = await _mergedStorageChannel.invokeMethod<String>('sharedDownloadDirectory');
-  if (systemDirectory == null || !path.isAbsolute(systemDirectory)) {
-    throw AppFailure('無法取得系統共用下載目錄');
+  if (!path.isAbsolute(targetDirectory)) {
+    throw AppFailure('目前下載路徑無效');
   }
-  final base = Directory(systemDirectory);
+  final base = Directory(targetDirectory);
   await base.create(recursive: true);
   final baseName = _safeName(drama.title);
   for (var n = 0; n < 10000; n++) {
@@ -102,7 +101,7 @@ extension MediaMergeOperations on MediaLibrary {
           listEquals(existing.episodes, task.episodes) &&
           await File(fileFor(existing)).exists() &&
           await File(fileFor(existing)).length() == existing.bytes) {
-        await _copyMergedToSharedDirectory(File(fileFor(existing)), existing.drama);
+        await _copyMergedToSharedDirectory(File(fileFor(existing)), existing.drama, await repository.downloadDirectory());
         return existing;
       }
       final current = {
@@ -399,7 +398,7 @@ extension MediaMergeOperations on MediaLibrary {
       _items = previous;
       rethrow;
     }
-    await _copyMergedToSharedDirectory(target, jobs.first.drama);
+    await _copyMergedToSharedDirectory(target, jobs.first.drama, await repository.downloadDirectory());
     return item;
   }
 }

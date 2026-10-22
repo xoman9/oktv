@@ -79,8 +79,7 @@ class MergeQueueJob {
           'completed',
           'cancelled',
         }.contains(state) ||
-        ids.length < 2 ||
-        ids.length > 10000 ||
+        ids.isEmpty ||
         ids.toSet().length != ids.length ||
         ids.length != episodes.length ||
         ids.any(
@@ -241,8 +240,8 @@ class MergeQueue {
     bool skipVerification = false,
   }) async {
     final epoch = library.store.profileEpoch;
-    if (!library.store.canDownload || groups.isEmpty || groups.length > 50) {
-      throw AppFailure('一次请选择 1 至 50 部剧加入合并队列');
+    if (!library.store.canDownload || groups.isEmpty) {
+      throw AppFailure('請至少選擇 1 部劇加入合併佇列');
     }
     final selections = groups.map(continuousMergeJobs).toList();
     for (final jobs in selections) {

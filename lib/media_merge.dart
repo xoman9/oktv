@@ -48,16 +48,15 @@ Future<File> _publishMergedMp4(File original, Drama drama, String directory) asy
   for (var n = 0; n < 10000; n++) {
     final name = n == 0 ? '$title-合.mp4' : '$title-合 ($n).mp4';
     final dest = File(path.join(base.path, name));
-    RandomAccessFile? reserved;
+    // File.create(exclusive: true) atomically reserves a name without
+    // overwriting an existing merged video.
     try {
-      reserved = await dest.open(mode: FileMode.writeOnlyExclusive);
+      await dest.create(exclusive: true);
     } on FileSystemException {
       if (await dest.exists()) continue;
       rethrow;
     }
     try {
-      await reserved.close();
-      reserved = null;
       await original.openRead().pipe(dest.openWrite());
       if (await dest.length() != await original.length()) {
         throw AppFailure('合併成品儲存不完整，原分集已保留');
@@ -66,8 +65,6 @@ Future<File> _publishMergedMp4(File original, Drama drama, String directory) asy
     } catch (_) {
       if (await dest.exists()) await dest.delete();
       rethrow;
-    } finally {
-      await reserved?.close();
     }
   }
   throw AppFailure('合併成品同名檔案過多');

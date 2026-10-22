@@ -301,16 +301,6 @@ func (engine *nativeEngine) updateSource(ctx context.Context, source, operation 
 		}
 	}
 	if operation == "more" {
-		// Explain Huangdou's exhausted/duplicate page instead of leaving a
-		// misleading "continue loading" status with an unchanged item count.
-		if source == sourceHuangdou {
-			current := engine.nativeCached(source)
-			if len(current.Items) == count && !current.HasMore {
-				engine.changeSourceRecord(source, func(record *nativeSourceRecord) {
-					record.Stage = "黃豆未回傳新影片，已停止重複分頁"
-				})
-			}
-		}
 		return nil
 	}
 	items := engine.nativeCached(source).Items

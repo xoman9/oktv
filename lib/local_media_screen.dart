@@ -148,28 +148,29 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
   }
 
   Future<void> _remove(LocalMediaItem item) async {
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('删除此媒体文件？'),
-        content: Text(
-          '将删除此成品文件。已单独保存的原分集不受影响。${item.merged || item.special ? '' : '此分集不再自动导出，需要时可手动重新导出。'}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('保留'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
-    if (yes != true || !mounted) return;
+    if (library.busy) return;
     try {
-      await library.remove(item);
+      // Match by stable source and drama ID; never delete by title alone.
+      final matchingItems = library.items.where((entry) =>
+          entry.drama.source == item.drama.source &&
+          entry.drama.id == item.drama.id).toList();
+      final downloads = await widget.repository.downloads();
+      final jobIds = downloads.where((job) =>
+          job.drama.source == item.drama.source &&
+          job.drama.id == item.drama.id).map((job) => job.id).toSet().toList();
+
+      // Native removal owns its recorded episode directories and index entries.
+      // Do not recursively delete a drama-title folder from this screen.
+      if (jobIds.isNotEmpty) {
+        final result = await widget.repository.controlDownloadBatch('remove', jobIds);
+        if (result.failures.isNotEmpty) {
+          throw AppFailure('部分下載分集無法刪除：${result.failures.values.first}');
+        }
+      }
+      for (final entry in matchingItems) {
+        await library.remove(entry);
+      }
+      if (mounted) await _refresh();
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
     }
@@ -359,11 +360,11 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
                                       icon: const Icon(Icons.copy),
                                     ),
                                     IconButton(
-                                      tooltip: '删除成品',
+                                      tooltip: '刪除這部劇的所有下載分集與合併成品',
                                       onPressed: library.busy
                                           ? null
                                           : () => _remove(item),
-                                      icon: const Icon(Icons.delete_outline),
+                                      icon: const Icon(Icons.delete_outline, color: Colors.grey),
                                     ),
                                   ],
                                 ),

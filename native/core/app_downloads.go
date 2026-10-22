@@ -153,7 +153,8 @@ func (manager *nativeDownloads) load() error {
 		// drama-title/episode layout. Never trust arbitrary persisted paths.
 		legacyFolder := record.Drama.Source + "/" + record.ID
 		currentFolder := filepath.ToSlash(filepath.Join(nativeDramaFolderName(record.Drama.Title), record.ID))
-		if record.Folder != "" && record.Folder != legacyFolder && record.Folder != currentFolder {
+		numberedFolder := filepath.ToSlash(filepath.Join(nativeDramaFolderName(record.Drama.Title), fmt.Sprintf("%04d", record.Index)))
+		if record.Folder != "" && record.Folder != legacyFolder && record.Folder != currentFolder && record.Folder != numberedFolder {
 			return errors.New("下载目录记录无效，原文件已保留")
 		}
 		if record.File != "" && record.File != "media.mp4" && record.File != "index.m3u8" {
@@ -332,10 +333,10 @@ func (manager *nativeDownloads) enqueueContext(ctx context.Context, input native
 		manager.jobs[id] = &nativeDownloadRecord{nativeDownloadJob: nativeDownloadJob{
 			ID: id, Drama: input.Drama, Chapter: entry.Chapter, Index: entry.Index,
 			Quality: input.Quality, State: "queued", Created: time.Now().UnixMilli()}}
-        // Directory layout: <selected download root>/<drama title>/<episode id>/...
+        // Directory layout: <selected download root>/<drama title>/<episode number (0001)>/...
         // Keep the per-episode folder because HLS uses repeated segment filenames.
         dramaDir := nativeDramaFolderName(input.Drama.Title)
-        manager.jobs[id].Folder = filepath.ToSlash(filepath.Join(dramaDir, id))
+        manager.jobs[id].Folder = filepath.ToSlash(filepath.Join(dramaDir, fmt.Sprintf("%04d", entry.Index)))
         if err := os.MkdirAll(filepath.Join(manager.root, dramaDir), 0700); err != nil {
             rollback()
             return 0, fmt.Errorf("無法建立片名資料夾：%w", err)

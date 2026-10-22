@@ -651,7 +651,14 @@ class NativeRepository extends AppRepository {
     }
     await workLease('storage', 'start');
     try {
-      await _call({'action': 'changeDownloadDirectory', 'directory': directory});
+      final result = await _call({
+        'action': 'changeDownloadDirectory',
+        'directory': directory,
+      });
+      final confirmed = result['directory'] as String? ?? '';
+      if (confirmed.isEmpty || confirmed != directory) {
+        throw AppFailure('下載目錄切換結果不一致：所選 $directory，實際 $confirmed');
+      }
     } finally {
       await workLease('storage', 'end');
     }

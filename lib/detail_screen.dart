@@ -120,7 +120,7 @@ class _DetailScreenState extends State<DetailScreen> {
             ) ~/
             episodePageSize;
       });
-      widget.repository.catalogUpdates.publish(merged, retryCover: true);
+      widget.repository.catalogUpdates.publish(merged);
       unawaited(_supplement(merged, generation));
       await saveUserChange(context, () => widget.store.refreshDrama(merged));
       if (mounted &&
@@ -153,7 +153,6 @@ class _DetailScreenState extends State<DetailScreen> {
       });
       widget.repository.catalogUpdates.publish(
         widget.repository.catalogUpdates.current(widget.drama),
-        retryCover: true,
       );
     }
   }

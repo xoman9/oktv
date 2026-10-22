@@ -213,12 +213,6 @@ func (engine *nativeEngine) saveCatalogCache(source string, result *nativeCatalo
 		}
 	} else {
 		items = mergeNativeCatalog(previous, result.Items)
-		// Some Huangdou API endpoints repeat the last full page after their
-		// pagination boundary. A full response is not proof of more content.
-		// Keep the existing catalog, but stop offering endless duplicate pages.
-		if source == sourceHuangdou && len(result.Items) > 0 && len(items) == len(previous) {
-			result.HasMore = false
-		}
 		if result.Page < state.Page {
 			result.Page, result.HasMore = state.Page, state.HasMore
 		}

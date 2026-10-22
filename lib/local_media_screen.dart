@@ -148,7 +148,14 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
   }
 
   Future<void> _remove(LocalMediaItem item) async {
-    if (library.busy) return;
+    if (library.busy) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('媒體任務執行中，請完成後再刪除原始分集')),
+        );
+      }
+      return;
+    }
     try {
       // Only remove downloaded episodes. Preserve all merged MP4 products
       // and their local-media records regardless of merge status.
@@ -333,11 +340,9 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
                                       tooltip: _merged
                                           ? '刪除原始下載分集（保留合併成品）'
                                           : '刪除這個合併成品',
-                                      onPressed: !_merged
-                                          ? () => _deleteMergedProduct(item)
-                                          : library.busy
-                                              ? null
-                                              : () => _remove(item),
+                                      onPressed: () => _merged
+                                          ? _remove(item)
+                                          : _deleteMergedProduct(item),
                                       icon: const Icon(Icons.delete_outline, color: Colors.grey),
                                     ),
                                   ],

@@ -70,7 +70,7 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
         }
       }
       final selected = <String>{};
-      var cleanup = false;
+      var cleanup = true;
       var skipVerification = true;
       final accepted = await showDialog<bool>(
         context: context,
@@ -120,15 +120,14 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
                     title: const Text('免驗證快速合併'),
                     onChanged: (value) => change(() {
                       skipVerification = value == true;
-                      if (skipVerification) cleanup = false;
                     }),
                   ),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     value: cleanup,
                     title: const Text('完成后删除原分集'),
-                    subtitle: const Text('仅在成品通过完整解码并保存后删除；默认保留原视频。'),
-                    onChanged: skipVerification ? null : (value) => change(() => cleanup = value == true),
+                    subtitle: const Text('合併檔成功儲存後清理原分集；失敗時保留原分集。'),
+                    onChanged: (value) => change(() => cleanup = value == true),
                   ),
                 ],
               ),

@@ -697,6 +697,7 @@ class StorageScreen extends StatefulWidget {
 class _StorageScreenState extends State<StorageScreen> {
   Map<String, dynamic>? _info;
   String? _error;
+  String? _directoryChangeStatus;
   bool _busy = false;
   @override
   void initState() {
@@ -754,6 +755,7 @@ class _StorageScreenState extends State<StorageScreen> {
         );
       }
       if (selected == null || !mounted) return;
+      setState(() => _directoryChangeStatus = '本次選取：$selected');
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -790,12 +792,21 @@ class _StorageScreenState extends State<StorageScreen> {
         });
       }
       await _refresh();
+      if (mounted) {
+        setState(() => _directoryChangeStatus =
+          '切換成功：$activeDirectory');
+      }
       if (mounted && _info?['directory'] != activeDirectory) {
         setState(() => _error =
           '切換結果尚未同步：核心路徑 $activeDirectory；畫面路徑 ${_info?['directory']}');
       }
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      if (mounted) {
+        setState(() {
+          _error = error.toString();
+          _directoryChangeStatus = '更換失敗：$error';
+        });
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -825,6 +836,18 @@ class _StorageScreenState extends State<StorageScreen> {
                 const Text('当前下载目录'),
                 const SizedBox(height: 8),
                 SelectableText(_info!['directory'] as String? ?? ''),
+                if (_directoryChangeStatus != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: SelectableText(
+                      _directoryChangeStatus!,
+                      style: TextStyle(
+                        color: _directoryChangeStatus!.startsWith('更換失敗')
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
                 TextButton.icon(
                   onPressed: () => Clipboard.setData(
                     ClipboardData(text: _info!['directory'] as String? ?? ''),

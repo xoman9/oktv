@@ -302,14 +302,7 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
                                       context,
                                     ).textTheme.bodySmall,
                                   ),
-                                if (_merged && item.merged)
-                                  TextButton.icon(
-                                    onPressed: library.busy
-                                        ? null
-                                        : () => _exportMerged(item),
-                                    icon: const Icon(Icons.output_rounded),
-                                    label: const Text('导出到 Emby 特别篇'),
-                                  ),
+
                                 Row(
                                   children: [
                                     TextButton.icon(

@@ -102,9 +102,7 @@ extension MediaMergeOperations on MediaLibrary {
           listEquals(existing.episodes, task.episodes) &&
           await File(fileFor(existing)).exists() &&
           await File(fileFor(existing)).length() == existing.bytes) {
-        if (task.skipVerification) {
-          await _copyMergedToSharedDirectory(File(fileFor(existing)), existing.drama);
-        }
+        await _copyMergedToSharedDirectory(File(fileFor(existing)), existing.drama);
         return existing;
       }
       final current = {
@@ -401,9 +399,7 @@ extension MediaMergeOperations on MediaLibrary {
       _items = previous;
       rethrow;
     }
-    if (skipVerification) {
-      await _copyMergedToSharedDirectory(target, jobs.first.drama);
-    }
+    await _copyMergedToSharedDirectory(target, jobs.first.drama);
     return item;
   }
 }

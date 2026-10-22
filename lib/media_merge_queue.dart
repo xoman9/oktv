@@ -241,7 +241,6 @@ class MergeQueue {
     bool skipVerification = false,
   }) async {
     final epoch = library.store.profileEpoch;
-    if (skipVerification && cleanup) throw AppFailure('免验证快速合并不可删除原分集');
     if (!library.store.canDownload || groups.isEmpty || groups.length > 50) {
       throw AppFailure('一次请选择 1 至 50 部剧加入合并队列');
     }
@@ -447,7 +446,7 @@ class MergeQueue {
     await library.repository.workLease('mergeCleanup', 'start');
     try {
       final file = File(library.fileFor(output));
-      if (!output.decodeVerified ||
+      if ((!output.decodeVerified && !task.skipVerification) ||
           !await file.exists() ||
           await file.length() != output.bytes) {
         throw AppFailure('合并成品未确认完整，已保留原分集');

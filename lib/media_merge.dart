@@ -3,12 +3,11 @@ part of 'media_library.dart';
 List<DownloadJob> continuousMergeJobs(List<DownloadJob> selected) {
   final jobs = List<DownloadJob>.of(selected)
     ..sort((a, b) => a.episode.number.compareTo(b.episode.number));
-  if (jobs.length < 2 ||
-      jobs.length > 10000 ||
+  if (jobs.isEmpty ||
       jobs.any((job) => !job.completed) ||
       jobs.map((job) => job.drama.id).toSet().length != 1 ||
       jobs.map((job) => job.episode.number).toSet().length != jobs.length) {
-    throw AppFailure('请选择同一部剧 2 至 10000 集已下载的视频，集数不能重复');
+    throw AppFailure('請選擇同一部劇至少 1 集已下載的影片，集數不可重複');
   }
   final missing = <int>[];
   for (var i = 1; i < jobs.length; i++) {

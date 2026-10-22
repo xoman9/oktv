@@ -443,6 +443,7 @@ func (manager *nativeDownloads) controlExpected(id, action, version string) erro
 			_ = manager.saveLocked()
 			return errors.New(job.Error)
 		}
+        manager.pruneEmptyDramaFolder(job.nativeDownloadJob)
 		delete(manager.jobs, id)
 		if err := manager.saveLocked(); err != nil {
 			job.Error = "文件已删除，记录尚未清理，请重试"
@@ -487,6 +488,17 @@ func (manager *nativeDownloads) scheduleLocked() {
 	}
 }
 
+// Remove a title folder only when every episode and other file is gone.
+// os.Remove refuses non-empty folders; never recurse into other downloads.
+func (manager *nativeDownloads) pruneEmptyDramaFolder(job nativeDownloadJob) {
+    dir := manager.jobDirectory(job)
+    parent := filepath.Dir(dir)
+    if parent == manager.root || !strings.HasPrefix(parent, manager.root+string(os.PathSeparator)) {
+        return
+    }
+    _ = os.Remove(parent)
+}
+
 func (manager *nativeDownloads) progress(id string, downloaded, total int64, progress float64) {
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
@@ -517,6 +529,7 @@ func (manager *nativeDownloads) run(ctx context.Context, job nativeDownloadJob) 
 	switch {
 	case record.State == "removing":
 		if removeErr := os.RemoveAll(manager.jobDirectory(job)); removeErr == nil {
+            manager.pruneEmptyDramaFolder(job)
 			delete(manager.jobs, job.ID)
 		} else {
 			record.State, record.Error = "failed", "文件无法删除，请稍后重试"

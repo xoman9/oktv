@@ -474,15 +474,17 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 			address = fmt.Sprintf("%s/index.php/vod/show/page/%d.html", base, page)
 		}
 	case source == sourceShuangguo:
-        class := strings.TrimSpace(category)
-        segment := "/show/26-----------.html"
-        if class != "" && class != "all" {
-            segment = fmt.Sprintf("/show/26---%s--------.html", url.PathEscape(class))
-        }
-        if page > 1 {
-            segment = fmt.Sprintf("%s%d---.html", strings.TrimSuffix(segment, "---.html"), page)
-        }
-        address = base + segment
+		// duanju2.com uses the string slug "duanju", not numeric category 26.
+		// Filtering is the fourth hyphen-delimited position in /show URLs.
+		class := strings.TrimSpace(category)
+		if class == "all" {
+			class = ""
+		}
+		if page <= 1 && class == "" {
+			address = base + "/show/duanju-----------.html"
+		} else {
+			address = fmt.Sprintf("%s/show/duanju--time-%s-----%d---.html", base, url.PathEscape(class), max(1, page))
+		}
 	case source == sourceWangguo:
 		class := strings.TrimSpace(category)
 		if class == "" {

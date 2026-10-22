@@ -374,6 +374,11 @@ func (d *Downloader) fetchGuanguoDetail(ctx context.Context, sourceID string) (D
 	if err != nil {
 		return Drama{}, nil, err
 	}
+	// The API may wrap the drama and episodes under data; do not mistake
+	// a valid nested payload for an empty detail response.
+	if nested, ok := response["data"].(map[string]any); ok {
+		response = nested
+	}
 	title := duanjuFindString(response, "title")
 	if title == "" && duanjuFindList(response, "data") == nil {
 		return Drama{}, nil, errors.New("观果详情接口当前返回空数据，该源暂时无法查看分集，请稍后重试或改用其他站源")

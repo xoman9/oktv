@@ -81,7 +81,7 @@ func nativeDownloadID(drama string, episode int) string {
 func nativeDramaFolderName(title string) string {
     title = strings.TrimSpace(title)
     title = strings.Map(func(r rune) rune {
-        if r < 32 || strings.ContainsRune("<>:\\\\/|?*\\"", r) {
+        if r < 32 || strings.ContainsRune(`<>:"/\|?*`, r) {
             return '_'
         }
         return r

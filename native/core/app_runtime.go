@@ -463,7 +463,13 @@ func nativeDispatch(input nativeInput) (any, error) {
 	case "storage":
 		return engine.storage()
 	case "changeDownloadDirectory":
-        return true, engine.changeDownloadDirectory(input.Directory)
+        if err := engine.changeDownloadDirectory(input.Directory); err != nil {
+            return nil, err
+        }
+        engine.downloads.mu.Lock()
+        active := engine.downloads.root
+        engine.downloads.mu.Unlock()
+        return map[string]string{"directory": active}, nil
 	case "moveDownloads":
 		return true, engine.moveDownloads(ctx, input.Directory)
 	case "workLease":

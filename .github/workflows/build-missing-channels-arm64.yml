@@ -42,7 +42,7 @@ jobs:
         run: go test ./core -run 'Test(MiguoSourceRegistration|ZhenguoAddedMacCMSSources|ZhenguoYouguoLiuguoRegistration)' -count=1
         working-directory: native
       - name: Check single-episode merge tests
-        run: flutter test test/media_library_test.dart
+        run: flutter test test/media_library_test.dart --plain-name 'one complete episode is sufficient for merge codec planning'
       - name: Configure signing
         run: python scripts/configure_signing.py
         env:

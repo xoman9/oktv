@@ -38,36 +38,39 @@ Future<bool> ensureSharedMergeStorage() async {
   return false;
 }
 
-Future<void> _copyMergedToSharedDirectory(File original, Drama drama, String targetDirectory) async {
-  if (!Platform.isAndroid) return;
-  if (!(await _mergedStorageChannel.invokeMethod<bool>('sharedStorageAccess') ?? false)) {
-    throw AppFailure('尚未授予所有檔案存取權限，請到系統設定開啟後再重試合併；原檔已保留');
-  }
-  if (!path.isAbsolute(targetDirectory)) {
-    throw AppFailure('目前下載路徑無效');
-  }
-  final base = Directory(targetDirectory);
+// Publish directly into the selected download root; never create library/full.mp4.
+// Reserve a unique name atomically, and keep the source until the copy is complete.
+Future<File> _publishMergedMp4(File original, Drama drama, String directory) async {
+  if (!path.isAbsolute(directory)) throw AppFailure('下載資料夾路徑無效');
+  final base = Directory(directory);
   await base.create(recursive: true);
-  final baseName = _safeName(drama.title);
+  final title = _safeName(drama.title);
   for (var n = 0; n < 10000; n++) {
-    final name = n == 0 ? '$baseName-合.mp4' : '$baseName-合 ($n).mp4';
+    final name = n == 0 ? '$title-合.mp4' : '$title-合 ($n).mp4';
     final dest = File(path.join(base.path, name));
-    if (await dest.exists()) continue;
-    final writing = File('${dest.path}.writing-${DateTime.now().microsecondsSinceEpoch}');
+    RandomAccessFile? reserved;
     try {
-      await original.copy(writing.path);
-      if (await writing.length() != await original.length()) {
-        throw AppFailure('共用目錄影片複製不完整，已保留原檔');
-      }
-      // No overwrites: destination names are sequentially disambiguated.
+      reserved = await dest.open(mode: FileMode.writeOnlyExclusive);
+    } on FileSystemException {
       if (await dest.exists()) continue;
-      await writing.rename(dest.path);
-      return;
+      rethrow;
+    }
+    try {
+      await reserved.close();
+      reserved = null;
+      await original.openRead().pipe(dest.openWrite());
+      if (await dest.length() != await original.length()) {
+        throw AppFailure('合併成品儲存不完整，原分集已保留');
+      }
+      return dest;
+    } catch (_) {
+      if (await dest.exists()) await dest.delete();
+      rethrow;
     } finally {
-      if (await writing.exists()) await writing.delete();
+      await reserved?.close();
     }
   }
-  throw AppFailure('同名合併影片過多，無法建立新檔');
+  throw AppFailure('合併成品同名檔案過多');
 }
 
 String _mergeDigest(Object value) =>
@@ -101,7 +104,7 @@ extension MediaMergeOperations on MediaLibrary {
           listEquals(existing.episodes, task.episodes) &&
           await File(fileFor(existing)).exists() &&
           await File(fileFor(existing)).length() == existing.bytes) {
-        await _copyMergedToSharedDirectory(File(fileFor(existing)), existing.drama, await repository.downloadDirectory());
+        // Existing output is already in the selected download root.
         return existing;
       }
       final current = {
@@ -369,11 +372,11 @@ extension MediaMergeOperations on MediaLibrary {
       verifyMediaDuration(checked, duration);
       await _decodeOutput(output, checked.duration);
     }
-    final relative = path.join('library', id, 'full.mp4');
-    final target = File(path.join(root!, relative));
-    await target.parent.create(recursive: true);
+    // No second copy under library/: directly publish to the selected root.
     _check();
-    await File(output).rename(target.path);
+    final target = await _publishMergedMp4(
+      File(output), jobs.first.drama, await repository.downloadDirectory());
+    final relative = path.basename(target.path);
     final item = LocalMediaItem(
       id: id,
       drama: jobs.first.drama,
@@ -398,7 +401,6 @@ extension MediaMergeOperations on MediaLibrary {
       _items = previous;
       rethrow;
     }
-    await _copyMergedToSharedDirectory(target, jobs.first.drama, await repository.downloadDirectory());
     return item;
   }
 }

@@ -165,6 +165,8 @@ abstract class AppRepository {
   Future<Map<String, dynamic>> storage() async => {};
   Future<String> downloadDirectory() async =>
       (await storage())['directory'] as String? ?? '';
+  Future<void> changeDownloadDirectory(String directory) async =>
+      throw AppFailure('當前環境不支援切換下載資料夾');
   Future<void> moveDownloads(String directory) async =>
       throw AppFailure('当前环境不支持迁移');
   Future<int> workLease(String id, String command) async => 0;
@@ -639,6 +641,20 @@ class NativeRepository extends AppRepository {
   Future<Map<String, dynamic>> storage() async {
     _downloadPermission();
     return _call({'action': 'storage'});
+  }
+
+  @override
+  Future<void> changeDownloadDirectory(String directory) async {
+    _downloadPermission();
+    if (access != null && !access!.profile.admin) {
+      throw AppFailure('僅管理員可更換下載資料夾');
+    }
+    await workLease('storage', 'start');
+    try {
+      await _call({'action': 'changeDownloadDirectory', 'directory': directory});
+    } finally {
+      await workLease('storage', 'end');
+    }
   }
 
   @override

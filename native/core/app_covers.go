@@ -149,9 +149,9 @@ func (cache *nativeCoverCache) loadAddress(ctx context.Context, drama nativeDram
 				cache.mu.Unlock()
 				return path, nil
 			}
-			if !force {
-				fallback = path
-			}
+			// A forced refresh must not discard the last valid poster.
+			// Keep the existing file as fallback when the remote host fails.
+			fallback = path
 		} else {
 			delete(cache.entries, key)
 			cache.size -= entry.size

@@ -300,6 +300,17 @@ type duanjuCategory struct {
 }
 
 var duanjuStaticCategories = map[string][]duanjuCategory{
+	sourceShuangguo: {
+		{ID: "all", Name: "全部"},
+		{ID: "女频恋爱", Name: "女頻戀愛"},
+		{ID: "脑洞悬疑", Name: "腦洞懸疑"},
+		{ID: "年代穿越", Name: "年代穿越"},
+		{ID: "古装仙侠", Name: "古裝仙俠"},
+		{ID: "现代都市", Name: "現代都市"},
+		{ID: "反转", Name: "反轉"},
+		{ID: "爽文", Name: "爽文"},
+		{ID: "短剧", Name: "短劇"},
+	},
 	sourceMeiguo: {{ID: "4", Name: "全部"}},
 	sourceChengguo: {{ID: "1", Name: "全部"}},
 	sourceXiaoguo: {{ID: "1", Name: "全部"}},

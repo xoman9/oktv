@@ -36,7 +36,7 @@ if options.platform == 'android':
             missing = set(required) - names
             if missing:
                 raise SystemExit('APK 缺少原生库：' + ', '.join(sorted(missing)))
-        target = output / f'{variant.slug}-{version}-{abi}.apk'
+        target = output / f'{variant.slug}-{("1.4.2m+94" if variant.all_sources and version == "1.4.2+94" else version)}-{abi}.apk'
         shutil.copy2(source, target)
         artifacts.append(target)
 elif options.platform == 'windows':

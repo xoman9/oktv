@@ -155,6 +155,14 @@ void main() {
     },
   );
 
+  test('one complete episode is sufficient for merge codec planning', () {
+    final plan = MergePlan.create([fixtureProbe()]);
+    expect(plan.videoTranscodes, 0);
+    expect(plan.audioTranscodes, 0);
+    expect(plan.video.videoCodec, 'h264');
+    expect(() => MergePlan.create([]), throwsA(isA<AppFailure>()));
+  });
+
   test('missing audio gets silence without discarding existing sound', () {
     final plan = MergePlan.create([
       fixtureProbe(audio: ''),

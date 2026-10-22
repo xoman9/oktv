@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/zhenguo-missing-channels-20261021
+      - fix/merge-single-unlimited-20261022
   workflow_dispatch:
 
 permissions:
@@ -40,6 +41,8 @@ jobs:
       - name: Unit tests for migrated sources
         run: go test ./core -run 'Test(MiguoSourceRegistration|ZhenguoAddedMacCMSSources|ZhenguoYouguoLiuguoRegistration)' -count=1
         working-directory: native
+      - name: Check single-episode merge tests
+        run: flutter test test/media_library_test.dart
       - name: Configure signing
         run: python scripts/configure_signing.py
         env:

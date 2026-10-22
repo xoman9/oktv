@@ -83,9 +83,9 @@ class MergePlan {
   }
 
   factory MergePlan.create(List<MediaProbe> probes) {
-    if (probes.length < 2 ||
+    if (probes.isEmpty ||
         probes.any((p) => p.videoCodec.isEmpty || p.duration <= 0)) {
-      throw AppFailure('请至少选择两集完整视频');
+      throw AppFailure('請至少選擇 1 集完整影片');
     }
     final video = _majority(probes, (p) => p.videoSignature);
     final withAudio = probes.where((p) => p.hasAudio).toList();

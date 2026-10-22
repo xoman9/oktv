@@ -48,12 +48,11 @@ Future<void> _copyMergedToSharedDirectory(File original, Drama drama) async {
     throw AppFailure('無法取得系統共用下載目錄');
   }
   final base = Directory(systemDirectory);
-  final folder = Directory(path.join(base.path, _safeName(drama.title)));
-  await folder.create(recursive: true);
+  await base.create(recursive: true);
   final baseName = _safeName(drama.title);
   for (var n = 0; n < 10000; n++) {
-    final name = n == 0 ? '$baseName.mkv' : '$baseName ($n).mkv';
-    final dest = File(path.join(folder.path, name));
+    final name = n == 0 ? '$baseName-合.mp4' : '$baseName-合 ($n).mp4';
+    final dest = File(path.join(base.path, name));
     if (await dest.exists()) continue;
     final writing = File('${dest.path}.writing-${DateTime.now().microsecondsSinceEpoch}');
     try {
@@ -336,7 +335,7 @@ extension MediaMergeOperations on MediaLibrary {
       'ffconcat version 1.0\n${normalized.map(concatFileLine).join('\n')}\n',
       flush: true,
     );
-    final output = path.join(temporary.path, 'full.mkv');
+    final output = path.join(temporary.path, 'full.mp4');
     final duration = probes.fold<double>(
       0,
       (sum, probe) => sum + probe.duration,
@@ -357,6 +356,8 @@ extension MediaMergeOperations on MediaLibrary {
         'copy',
         '-avoid_negative_ts',
         'make_zero',
+        '-movflags',
+        '+faststart',
         output,
       ],
       duration: duration,
@@ -371,7 +372,7 @@ extension MediaMergeOperations on MediaLibrary {
       verifyMediaDuration(checked, duration);
       await _decodeOutput(output, checked.duration);
     }
-    final relative = path.join('library', id, 'full.mkv');
+    final relative = path.join('library', id, 'full.mp4');
     final target = File(path.join(root!, relative));
     await target.parent.create(recursive: true);
     _check();

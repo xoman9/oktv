@@ -172,7 +172,15 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
   }
 
   Future<void> _deleteMergedProduct(LocalMediaItem item) async {
-    if (library.busy || !item.merged) return;
+    if (!item.merged) return;
+    if (library.busy) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('正在處理其他媒體任務，請完成後再刪除')),
+        );
+      }
+      return;
+    }
     try {
       // Delete only this merged MP4 and its media-library entry.
       // Native downloaded episodes, and other products, remain untouched.
@@ -228,7 +236,7 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
                     onSelected: (_) => setState(() => _merged = true),
                   ),
                   ChoiceChip(
-                    label: const Text('成品管理'),
+                    label: const Text('已合併管理'),
                     selected: !_merged,
                     onSelected: (_) => setState(() => _merged = false),
                   ),
@@ -325,11 +333,11 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
                                       tooltip: _merged
                                           ? '刪除原始下載分集（保留合併成品）'
                                           : '刪除這個合併成品',
-                                      onPressed: library.busy
-                                          ? null
-                                          : () => _merged
-                                              ? _remove(item)
-                                              : _deleteMergedProduct(item),
+                                      onPressed: !_merged
+                                          ? () => _deleteMergedProduct(item)
+                                          : library.busy
+                                              ? null
+                                              : () => _remove(item),
                                       icon: const Icon(Icons.delete_outline, color: Colors.grey),
                                     ),
                                   ],

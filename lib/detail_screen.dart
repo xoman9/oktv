@@ -107,9 +107,18 @@ class _DetailScreenState extends State<DetailScreen> {
           _profileEpoch != widget.store.profileEpoch) {
         return;
       }
-      final merged = widget.repository.catalogUpdates
+      final mergedDetail = widget.repository.catalogUpdates
           .current(widget.drama)
           .merge(detail.drama);
+      // Preserve Shuangguo's working list poster when detail metadata
+      // supplies a transient/different image URL.
+      final merged = widget.drama.source == 'shuangguo' &&
+              widget.drama.cover.isNotEmpty
+          ? Drama.fromJson({
+              ...mergedDetail.toJson(),
+              'cover': widget.drama.cover,
+            })
+          : mergedDetail;
       setState(() {
         _detail = DramaDetail(merged, detail.episodes, warning: detail.warning);
         _loading = false;
@@ -166,7 +175,14 @@ class _DetailScreenState extends State<DetailScreen> {
           _detail == null) {
         return;
       }
-      final updated = _detail!.drama.merge(fresh);
+      final supplement = _detail!.drama.merge(fresh);
+      final updated = widget.drama.source == 'shuangguo' &&
+              widget.drama.cover.isNotEmpty
+          ? Drama.fromJson({
+              ...supplement.toJson(),
+              'cover': widget.drama.cover,
+            })
+          : supplement;
       setState(() {
         _detail = DramaDetail(
           updated,

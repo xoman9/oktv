@@ -209,6 +209,7 @@ class _CachedCoverImageState extends State<CachedCoverImage> {
   bool _coverFailed = false;
   bool _retryOnFailure = false;
   bool _retryQueued = false;
+  bool _shuangguoAutoRetried = false;
   String? _failedPath;
 
   @override
@@ -233,6 +234,7 @@ class _CachedCoverImageState extends State<CachedCoverImage> {
         oldWidget.drama.cover != widget.drama.cover ||
         oldWidget.drama.source != widget.drama.source) {
       _coverFailed = _retryOnFailure = false;
+      _shuangguoAutoRetried = false;
       _failedPath = null;
       _coverRevision = widget.repository.catalogUpdates.coverRevision(
         widget.drama.id,
@@ -292,6 +294,13 @@ class _CachedCoverImageState extends State<CachedCoverImage> {
   Widget _failed(String? path) {
     _coverFailed = true;
     _failedPath = path;
+    // Shuangguo posters sometimes become unreadable after a player route
+    // returns. Retry the native cover cache once, without an endless loop.
+    if (widget.drama.source == 'shuangguo' &&
+        !_shuangguoAutoRetried && !_retryQueued) {
+      _shuangguoAutoRetried = true;
+      _retryOnFailure = true;
+    }
     if (_retryOnFailure) _queueRetry();
     return Center(
       child: IconButton(

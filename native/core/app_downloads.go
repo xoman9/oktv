@@ -149,7 +149,11 @@ func (manager *nativeDownloads) load() error {
 			return errors.New("下载记录条目无效，原索引和文件已保留")
 		}
 		seen[record.ID] = true
-		if record.Folder != "" && record.Folder != record.Drama.Source+"/"+record.ID {
+		// Accept both the historical source/episode layout and the current
+		// drama-title/episode layout. Never trust arbitrary persisted paths.
+		legacyFolder := record.Drama.Source + "/" + record.ID
+		currentFolder := filepath.ToSlash(filepath.Join(nativeDramaFolderName(record.Drama.Title), record.ID))
+		if record.Folder != "" && record.Folder != legacyFolder && record.Folder != currentFolder {
 			return errors.New("下载目录记录无效，原文件已保留")
 		}
 		if record.File != "" && record.File != "media.mp4" && record.File != "index.m3u8" {

@@ -150,10 +150,8 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
   Future<void> _remove(LocalMediaItem item) async {
     if (library.busy) return;
     try {
-      // Match by stable source and drama ID; never delete by title alone.
-      final matchingItems = library.items.where((entry) =>
-          entry.drama.source == item.drama.source &&
-          entry.drama.id == item.drama.id).toList();
+      // Only remove downloaded episodes. Preserve all merged MP4 products
+      // and their local-media records regardless of merge status.
       final downloads = await widget.repository.downloads();
       final jobIds = downloads.where((job) =>
           job.drama.source == item.drama.source &&
@@ -166,9 +164,6 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
         if (result.failures.isNotEmpty) {
           throw AppFailure('部分下載分集無法刪除：${result.failures.values.first}');
         }
-      }
-      for (final entry in matchingItems) {
-        await library.remove(entry);
       }
       if (mounted) await _refresh();
     } catch (error) {
@@ -360,7 +355,7 @@ class _LocalMediaScreenState extends State<LocalMediaScreen> {
                                       icon: const Icon(Icons.copy),
                                     ),
                                     IconButton(
-                                      tooltip: '刪除這部劇的所有下載分集與合併成品',
+                                      tooltip: '刪除這部劇的原始下載分集（保留合併成品）',
                                       onPressed: library.busy
                                           ? null
                                           : () => _remove(item),

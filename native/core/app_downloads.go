@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 	"sync"
 	"time"
 )
@@ -72,6 +74,25 @@ type nativeDownloads struct {
 func nativeDownloadID(drama string, episode int) string {
 	hash := sha256.Sum256([]byte(drama + "\x00" + strconv.Itoa(episode)))
 	return hex.EncodeToString(hash[:16])
+}
+
+// nativeDramaFolderName keeps the downloaded drama inside one safe,
+// human-readable directory, with episode ID subdirectories to avoid clashes.
+func nativeDramaFolderName(title string) string {
+    title = strings.TrimSpace(title)
+    title = strings.Map(func(r rune) rune {
+        if r < 32 || strings.ContainsRune("<>:\\\\/|?*\\"", r) {
+            return '_'
+        }
+        return r
+    }, title)
+    title = strings.Trim(title, " .")
+    if title == "" || title == "." || title == ".." { title = "未命名劇集" }
+    for utf8.RuneCountInString(title) > 80 {
+        _, size := utf8.DecodeLastRuneInString(title)
+        title = title[:len(title)-size]
+    }
+    return title
 }
 
 func nativeDownloadVersion(job nativeDownloadJob) string {
@@ -307,10 +328,15 @@ func (manager *nativeDownloads) enqueueContext(ctx context.Context, input native
 		manager.jobs[id] = &nativeDownloadRecord{nativeDownloadJob: nativeDownloadJob{
 			ID: id, Drama: input.Drama, Chapter: entry.Chapter, Index: entry.Index,
 			Quality: input.Quality, State: "queued", Created: time.Now().UnixMilli()}}
-		if manager.bySource {
-			manager.jobs[id].Folder = input.Drama.Source + "/" + id
-		}
-		added = append(added, id)
+        // Directory layout: <selected download root>/<drama title>/<episode id>/...
+        // Keep the per-episode folder because HLS uses repeated segment filenames.
+        dramaDir := nativeDramaFolderName(input.Drama.Title)
+        manager.jobs[id].Folder = filepath.ToSlash(filepath.Join(dramaDir, id))
+        if err := os.MkdirAll(filepath.Join(manager.root, dramaDir), 0700); err != nil {
+            rollback()
+            return 0, fmt.Errorf("無法建立片名資料夾：%w", err)
+        }
+        added = append(added, id)
 		tasks++
 	}
 	if err := manager.saveLocked(); err != nil {

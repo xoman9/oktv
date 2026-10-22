@@ -682,6 +682,9 @@ func (d *Downloader) fetchMaccmsDetail(ctx context.Context, source, sourceID str
 
 func maccmsDetailCandidates(source, base, sourceID string) []string {
 	switch {
+	case source == sourceShuangguo:
+		// duanju2.com uses /vod/<id>.html for drama detail pages.
+		return []string{fmt.Sprintf("%s/vod/%s.html", base, sourceID)}
 	case source == sourceFaguo:
 		return []string{
 			fmt.Sprintf("%s/xzyxvd/%s.html", base, sourceID),

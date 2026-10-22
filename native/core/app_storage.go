@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+    "fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -46,8 +47,12 @@ func (engine *nativeEngine) storage() (nativeStorageInfo, error) {
 }
 
 func nativeDownloadLocation(directory string) string {
-    // Android fresh-install policy: ignore legacy download roots and saved
-    // download-location.json; use the shared folder requested by the user.
+    // An explicitly selected root always wins, including on Android.
+    var selected struct { Directory string `json:"directory"` }
+    if data, err := os.ReadFile(filepath.Join(directory, "download-location.json")); err == nil &&
+        json.Unmarshal(data, &selected) == nil && filepath.IsAbs(selected.Directory) {
+        return filepath.Clean(selected.Directory)
+    }
     if strings.HasPrefix(directory, "/data/user/") || strings.HasPrefix(directory, "/data/data/") {
         var androidRoot struct { Directory string `json:"directory"` }
         if data, err := os.ReadFile(filepath.Join(directory, "android-download-root.json")); err == nil &&
@@ -122,6 +127,49 @@ func nativeCopyTree(ctx context.Context, source, target string) error {
 		}
 		return output.Sync()
 	})
+}
+
+// changeDownloadDirectory changes the future download root without migrating
+// or deleting any existing files. Stop active downloads before switching.
+func (engine *nativeEngine) changeDownloadDirectory(target string) error {
+    target = filepath.Clean(target)
+    if !filepath.IsAbs(target) || target == "/" {
+        return errors.New("請選擇有效的下載資料夾")
+    }
+    manager := engine.downloads
+    engine.mu.Lock()
+    defer engine.mu.Unlock()
+    if engine.work["media"] || engine.work["mergeQueue"] || engine.work["mergeCleanup"] {
+        return errors.New("請先完成影片合併，再更換下載資料夾")
+    }
+    manager.mu.Lock()
+    defer manager.mu.Unlock()
+    if manager.closed || manager.moving { return errors.New("下載目錄忙碌中") }
+    if target == manager.root { return nil }
+    for _, job := range manager.jobs {
+        if job.State == "queued" || job.State == "downloading" {
+            return errors.New("請先暫停所有下載任務再切換資料夾")
+        }
+    }
+    if err := os.MkdirAll(target, 0700); err != nil {
+        return fmt.Errorf("無法建立所選資料夾：%w", err)
+    }
+    test, err := os.CreateTemp(target, ".duanju-write-check-*")
+    if err != nil { return fmt.Errorf("所選目錄沒有寫入權限：%w", err) }
+    _ = test.Close()
+    _ = os.Remove(test.Name())
+    info, err := os.Stat(filepath.Join(target, "index.json"))
+    if err == nil && !info.Mode().IsRegular() { return errors.New("所選目錄索引無效") }
+    if err == nil { return errors.New("所選目錄已有下載索引，請選擇新的空白資料夾") }
+    if !os.IsNotExist(err) { return fmt.Errorf("無法檢查下載索引：%w", err) }
+    data, _ := json.Marshal(map[string]string{"directory": target})
+    if err := nativeDownloadWrite(filepath.Join(engine.directory, "download-location.json"), data); err != nil {
+        return fmt.Errorf("儲存下載資料夾失敗：%w", err)
+    }
+    manager.root = target
+    manager.jobs = map[string]*nativeDownloadRecord{}
+    manager.loadErr = nil
+    return nil
 }
 
 func (engine *nativeEngine) moveDownloads(ctx context.Context, parent string) error {

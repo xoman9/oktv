@@ -790,6 +790,10 @@ class _StorageScreenState extends State<StorageScreen> {
         });
       }
       await _refresh();
+      if (mounted && _info?['directory'] != activeDirectory) {
+        setState(() => _error =
+          '切換結果尚未同步：核心路徑 $activeDirectory；畫面路徑 ${_info?['directory']}');
+      }
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
     } finally {

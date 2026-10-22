@@ -734,75 +734,49 @@ class _StorageScreenState extends State<StorageScreen> {
   }
 
   Future<void> _move() async {
-    String? parent;
-    if (Platform.isAndroid || Platform.isIOS) {
-      final support = await getApplicationSupportDirectory();
-      final directories = <String, String>{support.path: '应用内部存储'};
+    String? selected;
+    try {
       if (Platform.isAndroid) {
-        directories['/storage/emulated/0/Download/duanju'] = '共用下載目錄 Download/duanju';
-        final external = await getExternalStorageDirectories() ?? [];
-        for (var i = 0; i < external.length; i++) {
-          directories[external[i].path] = i == 0
-              ? '设备共享存储（应用目录）'
-              : 'SD 卡 ${i + 1}（应用目录）';
+        const channel = MethodChannel('duanju/device');
+        final granted =
+            await channel.invokeMethod<bool>('sharedStorageAccess') ?? false;
+        if (!granted) {
+          await channel.invokeMethod<bool>('requestSharedStorageAccess');
+          if (mounted) {
+            setState(() => _error = '請先授予儲存權限，返回後重新選取資料夾');
+          }
+          return;
         }
+        selected = await channel.invokeMethod<String>('selectDownloadDirectory');
       } else {
-        final documents = await getApplicationDocumentsDirectory();
-        directories[documents.path] = '文件 App 可见目录';
+        selected = await FilePicker.getDirectoryPath(
+          dialogTitle: '選擇下載資料夾',
+        );
       }
-      if (!mounted) return;
-      parent = await showDialog<String>(
+      if (selected == null || !mounted) return;
+      final confirmed = await showDialog<bool>(
         context: context,
-        builder: (context) => SimpleDialog(
-          title: const Text('选择下载位置'),
-          children: [
-            for (final entry in directories.entries)
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, entry.key),
-                child: Text(entry.value),
-              ),
+        builder: (context) => AlertDialog(
+          title: const Text('更換下載資料夾'),
+          content: Text('日後下載與合併成品將使用：\n$selected\n\n不搬移或刪除原有資料。請先暫停下載中的任務。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('使用此資料夾'),
+            ),
           ],
         ),
       );
-    } else {
-      parent = await FilePicker.getDirectoryPath(dialogTitle: '选择下载保存位置');
-    }
-    if (parent == null || !mounted) return;
-    if (Platform.isAndroid && parent == '/storage/emulated/0/Download/duanju') {
-      const channel = MethodChannel('duanju/device');
-      final allowed = await channel.invokeMethod<bool>('sharedStorageAccess') ?? false;
-      if (!allowed) {
-        await channel.invokeMethod<bool>('requestSharedStorageAccess');
-        if (mounted) setState(() => _error = '請在系統設定允許所有檔案存取權限，返回後再選擇共用下載目錄');
-        return;
-      }
-    }
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('迁移已下载内容？'),
-        content: Text(
-          '将视频、合并成品及导出内容迁移到：\n$parent\n\n下载会先暂停，复制成功后清理旧目录。请保证目标有足够空间，并在完成后继续下载。',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('迁移'),
-          ),
-        ],
-      ),
-    );
-    if (yes != true || !mounted) return;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      await widget.repository.moveDownloads(parent);
+      if (confirmed != true || !mounted) return;
+      setState(() {
+        _busy = true;
+        _error = null;
+      });
+      await widget.repository.changeDownloadDirectory(selected);
       await _refresh();
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
@@ -866,7 +840,7 @@ class _StorageScreenState extends State<StorageScreen> {
                 FilledButton.icon(
                   onPressed: _busy ? null : _move,
                   icon: const Icon(Icons.drive_file_move_outline),
-                  label: const Text('更改并迁移目录'),
+                  label: const Text('更換下載資料夾'),
                 ),
               TextButton(
                 onPressed: _busy ? null : _refresh,

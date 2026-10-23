@@ -448,7 +448,7 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 			address = fmt.Sprintf("%s%s/page/%d.html", base, strings.TrimSuffix(class, ".html"), page)
 		}
 	case source == sourceMeiguo || source == sourceChengguo || source == sourceXiaoguo || source == sourceZaoguo || source == sourceNingguo || source == sourceMangguo:
-		class := strings.TrimSpace(category); if class == "" { class = map[string]string{sourceMeiguo:"4",sourceChengguo:"1",sourceXiaoguo:"1",sourceZaoguo:"21",sourceNingguo:"1",sourceMangguo:"20"}[source] }
+		class := strings.TrimSpace(category); if class == "" || class == "all" { class = map[string]string{sourceMeiguo:"4",sourceChengguo:"1",sourceXiaoguo:"1",sourceZaoguo:"21",sourceNingguo:"1",sourceMangguo:"20"}[source] }
 		if page <= 1 { address = fmt.Sprintf("%s/index.php/vod/type/id/%s.html",base,url.PathEscape(class)) } else { address = fmt.Sprintf("%s/index.php/vod/type/id/%s/page/%d.html",base,url.PathEscape(class),page) }
 	case source == sourceYingguo || source == sourceLuguo || source == sourceLiguo:
 		class := strings.TrimSpace(category); if class == "" { class = map[string]string{sourceYingguo:"28",sourceLuguo:"26",sourceLiguo:"28"}[source] }

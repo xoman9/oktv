@@ -426,7 +426,7 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 			address = base + "/"
 		} else {
 			class := strings.TrimSpace(category)
-			if class == "" {
+			if class == "" || class == "all" {
 				class = "27"
 			}
 			address = fmt.Sprintf("%s/search.html?page=%d&searchtype=5&tid=%s&year=", base, page, url.QueryEscape(class))

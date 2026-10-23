@@ -461,7 +461,7 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 		if page <= 1 { address = base + "/" } else { address = fmt.Sprintf("%s/page/%d/", base, page) }
 	case source == sourceTaoguo || source == sourceYanguo:
 		class := strings.TrimSpace(category)
-		if class == "" { class = "1" }
+		if class == "" || class == "all" { class = "1" }
 		if page <= 1 {
 			address = fmt.Sprintf("%s/index.php/vod/type/id/%s.html", base, url.PathEscape(class))
 		} else {
@@ -1256,6 +1256,30 @@ var maccmsHomeTypePatterns = []*regexp.Regexp{
 	// 注：movie/tv/art/news 等段既可能是分类也可能是详情，易与详情前缀歧义，不收录于此，
 	// 否则会被 maccmsGenericIsNoisePath 误判为噪声、误杀通用抽取的详情链接。
 	regexp.MustCompile(`(?i)^/((?:listnews|listnew|fenlei|arttype|zylist))/(\d{1,6})(?:\.html|/)?$`),
+}
+
+// fetchTaoguoCategories parses real MacCMS category IDs from the main
+// navigation; no speculative categories are hard-coded.
+func (d *Downloader) fetchTaoguoCategories(ctx context.Context) ([]nativeCategory, error) {
+	base := d.duanjuBaseURL(sourceTaoguo)
+	document, _, err := d.fetchProviderPage(ctx, base+"/", base+"/", duanjuUserAgent)
+	if err != nil {
+		return nil, err
+	}
+	signals, _ := maccmsCustomHomeSignals(document)
+	categories := []nativeCategory{{ID: "all", Name: "全部"}}
+	seen := map[string]bool{"all": true}
+	for _, signal := range signals {
+		if signal.ID == "" || signal.Name == "" || seen[signal.ID] {
+			continue
+		}
+		seen[signal.ID] = true
+		categories = append(categories, nativeCategory{ID: signal.ID, Name: signal.Name})
+	}
+	if len(categories) == 1 {
+		return nil, errors.New("桃果首页未解析到分类链接")
+	}
+	return categories, nil
 }
 
 func maccmsCleanAnchorText(text string) string {

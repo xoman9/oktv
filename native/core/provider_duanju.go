@@ -367,6 +367,7 @@ var duanjuStaticCategories = map[string][]duanjuCategory{
 		{ID: "943", Name: "职场商战"},
 	},
 	sourceHuaguo: {
+		{ID: "all", Name: "全部"},
 		{ID: "27", Name: "短剧"},
 	},
 }

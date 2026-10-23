@@ -17,7 +17,7 @@ func (d *Downloader) fetchDuanjuCategories(ctx context.Context, source string) (
 	if !isDuanjuProviderSource(source) {
 		return nil, errors.New("该站源不支持分类读取")
 	}
-	if source == sourceTaoguo || source == sourceYanguo {
+	if source == sourceTaoguo || source == sourceYanguo || source == sourceXiaoguo {
 		// Read category links from each site's navigation; retain static
 		// categories if the source temporarily cannot be reached.
 		if categories, err := d.fetchTaoguoCategories(ctx, source); err == nil && len(categories) > 0 {

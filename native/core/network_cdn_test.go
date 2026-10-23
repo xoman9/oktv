@@ -124,3 +124,12 @@ func TestCoverDNSRecoveryAcceptsNewImageHosts(t *testing.T) {
 		}
 	}
 }
+
+func TestHuaguoCDNHasSafeDNSFallback(t *testing.T) {
+	if !protectedCDNHost("cdn.yddsha2.com") {
+		t.Fatal("Huaguo playlist CDN must use verified-public-IP DNS fallback")
+	}
+	if protectedCDNHost("unrelated.yddsha2.com") {
+		t.Fatal("Do not enable alternate DNS for unrelated hosts")
+	}
+}

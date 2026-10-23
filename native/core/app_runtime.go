@@ -773,7 +773,13 @@ func (engine *nativeEngine) nativeDetail(ctx context.Context, drama nativeDrama)
 		drama.Title = title
 	}
 	if raw.ID == drama.ID {
-		drama = mergeNativeDrama(drama, nativeNormalize(raw))
+		fresh := nativeNormalize(raw)
+		// Shuangguo's detail page can expose a generic poster unrelated to
+		// the series. Preserve the cover from the working catalog card.
+		if source == sourceShuangguo && drama.Cover != "" {
+			fresh.Cover = drama.Cover
+		}
+		drama = mergeNativeDrama(drama, fresh)
 	}
 	if source == sourceHongguo {
 		raw := engine.downloader.hongguoCachedDrama(Drama{ID: drama.ID, Title: drama.Title, Source: source})

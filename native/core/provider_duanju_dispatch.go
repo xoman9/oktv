@@ -17,6 +17,13 @@ func (d *Downloader) fetchDuanjuCategories(ctx context.Context, source string) (
 	if !isDuanjuProviderSource(source) {
 		return nil, errors.New("该站源不支持分类读取")
 	}
+	if source == sourceTaoguo {
+		// Discover real category IDs from the site instead of exposing only
+		// a hard-coded "all" entry. Keep the old entry as offline fallback.
+		if categories, err := d.fetchTaoguoCategories(ctx); err == nil && len(categories) > 0 {
+			return categories, nil
+		}
+	}
 	if static, found := duanjuStaticCategories[source]; found {
 		categories := make([]nativeCategory, 0, len(static))
 		for _, entry := range static {

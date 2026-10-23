@@ -146,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ..._categories.where((entry) =>
         entry.id.isNotEmpty &&
         entry.id.toLowerCase() != 'all' &&
-        entry.name.trim().replaceAll(RegExp(r'\\s+'), '') != '全部'),
+        entry.name.trim().replaceAll(RegExp(r'\s+'), '') != '全部'),
   ];
 
   Future<void> _loadCategories({

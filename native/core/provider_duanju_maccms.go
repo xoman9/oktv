@@ -659,6 +659,13 @@ func (d *Downloader) fetchMaccmsDetail(ctx context.Context, source, sourceID str
 			Category:    maccmsDetailCategory(document),
 			ChannelName: duanjuSourceName(source),
 		}
+		// Shuangguo pages can contain a generic site image before the actual
+		// poster. Prefer the document's explicitly declared social poster.
+		if source == sourceShuangguo {
+			if cover := maccmsDeclaredCover(document, finalURL); cover != "" {
+				drama.Cover = cover
+			}
+		}
 		var chapters []Chapter
 		for index, episode := range episodes {
 			number := duanjuEpisodeNumber(firstNonEmpty(episode.Title, episode.Key), index+1)
@@ -827,6 +834,19 @@ func maccmsDetailIntro(document *html.Node) string {
 			if content := strings.TrimSpace(providerHTMLAttr(meta, "content")); content != "" {
 				return truncate(content, 2000)
 			}
+		}
+	}
+	return ""
+}
+
+func maccmsDeclaredCover(document *html.Node, pageURL string) string {
+	for _, meta := range providerHTMLNodes(document, func(node *html.Node) bool { return node.Data == "meta" }) {
+		name := strings.ToLower(strings.TrimSpace(firstNonEmpty(providerHTMLAttr(meta, "property"), providerHTMLAttr(meta, "name"))))
+		if name != "og:image" && name != "twitter:image" && name != "og:image:url" {
+			continue
+		}
+		if address := providerCoverAddress(providerHTMLAttr(meta, "content"), pageURL); address != "" {
+			return address
 		}
 	}
 	return ""

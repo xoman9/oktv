@@ -1260,24 +1260,26 @@ var maccmsHomeTypePatterns = []*regexp.Regexp{
 
 // fetchTaoguoCategories parses real MacCMS category IDs from the main
 // navigation; no speculative categories are hard-coded.
-func (d *Downloader) fetchTaoguoCategories(ctx context.Context) ([]nativeCategory, error) {
-	base := d.duanjuBaseURL(sourceTaoguo)
+func (d *Downloader) fetchTaoguoCategories(ctx context.Context, source string) ([]nativeCategory, error) {
+	base := d.duanjuBaseURL(source)
 	document, _, err := d.fetchProviderPage(ctx, base+"/", base+"/", duanjuUserAgent)
 	if err != nil {
 		return nil, err
 	}
 	signals, _ := maccmsCustomHomeSignals(document)
 	categories := []nativeCategory{{ID: "all", Name: "全部"}}
-	seen := map[string]bool{"all": true}
+	seenIDs := map[string]bool{"all": true}
+	seenNames := map[string]bool{"全部": true}
 	for _, signal := range signals {
-		if signal.ID == "" || signal.Name == "" || seen[signal.ID] {
+		id, name := strings.TrimSpace(signal.ID), strings.TrimSpace(signal.Name)
+		if id == "" || name == "" || seenIDs[id] || seenNames[name] {
 			continue
 		}
-		seen[signal.ID] = true
-		categories = append(categories, nativeCategory{ID: signal.ID, Name: signal.Name})
+		seenIDs[id], seenNames[name] = true, true
+		categories = append(categories, nativeCategory{ID: id, Name: name})
 	}
 	if len(categories) == 1 {
-		return nil, errors.New("桃果首页未解析到分类链接")
+		return nil, errors.New("站点首页未解析到分类链接")
 	}
 	return categories, nil
 }

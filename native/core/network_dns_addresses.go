@@ -19,6 +19,11 @@ var nonPublicCDNNetworks = []netip.Prefix{
 
 func protectedCDNHost(host string) bool {
 	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	// Huaguo's HLS CDN may resolve to loopback on some networks. Permit
+	// the existing verified-public-IP DoH fallback for this exact host.
+	if host == "cdn.yddsha2.com" {
+		return true
+	}
 	for _, domain := range []string{"tuafjz.cn", "zdmhyg.cn", "lkkwip.cn", "bnfuiu.cn"} {
 		if host == domain || strings.HasSuffix(host, "."+domain) {
 			return true

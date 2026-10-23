@@ -154,6 +154,27 @@ func (d *Downloader) resolveDuanjuMedia(ctx context.Context, task Task) (provide
 	address := strings.TrimSpace(task.Chapter.VideoURL)
 	pageURL := strings.TrimSpace(task.Chapter.PageURL)
 	referer := firstNonEmpty(task.Chapter.Referer, base+"/")
+	// Huaguo sometimes supplies a direct HLS address in the chapter but
+	// another route on the same episode's play page. The direct-address fast
+	// path used to skip those alternatives when its CDN could not connect.
+	if source == sourceHuaguo && pageURL != "" && isProviderHTTPMediaURL(address) && duanjuLooksLikeMedia(address) {
+		primary := providerMedia{URL: address, Referer: referer}
+		prepared, primaryErr := d.prepareWebProviderMedia(ctx, primary, name)
+		if primaryErr == nil {
+			return prepared, nil
+		}
+		if resolved, routeErr := d.resolveDuanjuWebPage(ctx, source, pageURL, referer); routeErr == nil {
+			if resolved.URL != address {
+				if alternative, altErr := d.prepareWebProviderMedia(ctx, resolved, name); altErr == nil {
+					return alternative, nil
+				}
+			}
+			if fallback, ok := d.prepareWebProviderRouteFallback(ctx, resolved, name); ok {
+				return fallback, nil
+			}
+		}
+		return providerMedia{}, primaryErr
+	}
 	if !isProviderHTTPMediaURL(address) || !duanjuLooksLikeMedia(address) {
 		if pageURL == "" {
 			if source, sourceID, valid := splitProviderDramaID(task.DramaID); valid {

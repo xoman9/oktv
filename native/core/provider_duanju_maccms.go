@@ -510,6 +510,15 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 		return nil, false, err
 	}
 	items := maccmsCards(document, source, base)
+	if source == sourceLiuguo && len(items) == 0 {
+		// The source may update its MacCMS template or API while keeping
+		// the same host. On an empty page, try the existing template/API
+		// discovery instead of treating an empty parse as fresh catalog.
+		if fallback, more, fallbackErr := d.fetchMaccmsCustomCatalog(ctx, source, page, category); fallbackErr == nil && len(fallback) > 0 {
+			return fallback, more, nil
+		}
+		return nil, false, errors.New("榴果站源更新后未解析到影片，请检查网站模板或站源地址")
+	}
 	_ = finalURL
 	return items, len(items) > 0, nil
 }

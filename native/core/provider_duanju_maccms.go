@@ -542,7 +542,17 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 		if fallback, more, fallbackErr := d.fetchMaccmsCustomCatalog(ctx, source, page, category); fallbackErr == nil && len(fallback) > 0 {
 			return fallback, more, nil
 		}
-		return nil, false, errors.New("榴果站源未解析到影片：所有已知目录和模板入口均无有效片卡")
+		// Report structural signals only; never expose URL query parameters,
+		// tokens or raw page content in the on-device error message.
+		images := len(providerHTMLNodes(document, func(node *html.Node) bool { return node.Data == "img" }))
+		anchors := len(providerHTMLNodes(document, func(node *html.Node) bool { return node.Data == "a" }))
+		candidateLinks := 0
+		for _, node := range providerHTMLNodes(document, func(node *html.Node) bool { return node.Data == "a" }) {
+			if maccmsSourceIDFromURL(providerHTMLAttr(node, "href")) != "" {
+				candidateLinks++
+			}
+		}
+		return nil, false, fmt.Errorf("榴果站源未解析到影片（页面图片 %d、链接 %d、疑似视频链接 %d）；需核对 APK 原生解析格式", images, anchors, candidateLinks)
 	}
 	_ = finalURL
 	return items, len(items) > 0, nil

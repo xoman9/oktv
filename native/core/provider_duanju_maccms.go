@@ -266,7 +266,11 @@ func maccmsCardRemark(card *html.Node) string {
 func maccmsCards(document *html.Node, source, base string) []Drama {
 	var cards []*html.Node
 	seen := map[*html.Node]bool{}
-	for _, name := range maccmsCardClasses {
+	classes := maccmsCardClasses
+	if source == sourceLiuguo {
+		classes = append(append([]string(nil), classes...), "video-item", "vodlist_item", "thumbnail", "media-card")
+	}
+	for _, name := range classes {
 		for _, node := range providerHTMLNodes(document, maccmsClassMatcher(name)) {
 			if !seen[node] {
 				seen[node] = true
@@ -460,11 +464,15 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 	case source == sourceLiuguo:
 		class := strings.TrimSpace(category)
 		if class == "" || class == "all" {
-			if page <= 1 { address = base + "/" } else { address = fmt.Sprintf("%s/page/%d/", base, page) }
-		} else if webProviderNumericID.MatchString(class) {
-			if page <= 1 { address = fmt.Sprintf("%s/vodtype/%s.html", base, class) } else { address = fmt.Sprintf("%s/vodtype/%s-%d.html", base, class, page) }
-		} else {
+			class = "3"
+		}
+		if !webProviderNumericID.MatchString(class) {
 			return nil, false, errors.New("榴果分类编号无效")
+		}
+		if page <= 1 {
+			address = fmt.Sprintf("%s/vodtype/%s.html", base, class)
+		} else {
+			address = fmt.Sprintf("%s/vodtype/%s-%d.html", base, class, page)
 		}
 	case source == sourceTaoguo || source == sourceYanguo:
 		class := strings.TrimSpace(category)
@@ -511,48 +519,7 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 	}
 	items := maccmsCards(document, source, base)
 	if source == sourceLiuguo && len(items) == 0 {
-		// An HTTP 200 homepage is not proof of a populated catalog. Try
-		// the generic detail-link extractor before route discovery.
-		items = maccmsGenericItems(document, source, base, 0)
-		if len(items) > 0 {
-			return items, true, nil
-		}
-		// Candidate routes are observed in the donor APK, but none is
-		// trusted unless it actually returns recognizable drama cards.
-		candidates := []string{}
-		if page <= 1 && (category == "" || category == "all") {
-			candidates = append(candidates, base+"/vodtype/1.html", base+"/vodtype/1/")
-		}
-		if category != "" && category != "all" && webProviderNumericID.MatchString(category) {
-			candidates = append(candidates, fmt.Sprintf("%s/vodtype/%s/", base, category))
-		}
-		for _, candidate := range candidates {
-			candidatePage, _, candidateErr := d.fetchProviderPage(ctx, candidate, base+"/", duanjuUserAgent)
-			if candidateErr != nil {
-				continue
-			}
-			fallback := maccmsCards(candidatePage, source, base)
-			if len(fallback) == 0 {
-				fallback = maccmsGenericItems(candidatePage, source, base, 0)
-			}
-			if len(fallback) > 0 {
-				return fallback, true, nil
-			}
-		}
-		if fallback, more, fallbackErr := d.fetchMaccmsCustomCatalog(ctx, source, page, category); fallbackErr == nil && len(fallback) > 0 {
-			return fallback, more, nil
-		}
-		// Report structural signals only; never expose URL query parameters,
-		// tokens or raw page content in the on-device error message.
-		images := len(providerHTMLNodes(document, func(node *html.Node) bool { return node.Data == "img" }))
-		anchors := len(providerHTMLNodes(document, func(node *html.Node) bool { return node.Data == "a" }))
-		candidateLinks := 0
-		for _, node := range providerHTMLNodes(document, func(node *html.Node) bool { return node.Data == "a" }) {
-			if maccmsSourceIDFromURL(providerHTMLAttr(node, "href")) != "" {
-				candidateLinks++
-			}
-		}
-		return nil, false, fmt.Errorf("榴果站源未解析到影片（页面图片 %d、链接 %d、疑似视频链接 %d）；需核对 APK 原生解析格式", images, anchors, candidateLinks)
+		return nil, false, errors.New("榴果分类目录未返回有效影片，请检查站点是否可访问")
 	}
 	_ = finalURL
 	return items, len(items) > 0, nil

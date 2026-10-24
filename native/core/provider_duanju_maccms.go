@@ -511,13 +511,38 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 	}
 	items := maccmsCards(document, source, base)
 	if source == sourceLiuguo && len(items) == 0 {
-		// The source may update its MacCMS template or API while keeping
-		// the same host. On an empty page, try the existing template/API
-		// discovery instead of treating an empty parse as fresh catalog.
+		// An HTTP 200 homepage is not proof of a populated catalog. Try
+		// the generic detail-link extractor before route discovery.
+		items = maccmsGenericItems(document, source, base, 0)
+		if len(items) > 0 {
+			return items, true, nil
+		}
+		// Candidate routes are observed in the donor APK, but none is
+		// trusted unless it actually returns recognizable drama cards.
+		candidates := []string{}
+		if page <= 1 && (category == "" || category == "all") {
+			candidates = append(candidates, base+"/vodtype/1.html", base+"/vodtype/1/")
+		}
+		if category != "" && category != "all" && webProviderNumericID.MatchString(category) {
+			candidates = append(candidates, fmt.Sprintf("%s/vodtype/%s/", base, category))
+		}
+		for _, candidate := range candidates {
+			candidatePage, _, candidateErr := d.fetchProviderPage(ctx, candidate, base+"/", duanjuUserAgent)
+			if candidateErr != nil {
+				continue
+			}
+			fallback := maccmsCards(candidatePage, source, base)
+			if len(fallback) == 0 {
+				fallback = maccmsGenericItems(candidatePage, source, base, 0)
+			}
+			if len(fallback) > 0 {
+				return fallback, true, nil
+			}
+		}
 		if fallback, more, fallbackErr := d.fetchMaccmsCustomCatalog(ctx, source, page, category); fallbackErr == nil && len(fallback) > 0 {
 			return fallback, more, nil
 		}
-		return nil, false, errors.New("榴果站源更新后未解析到影片，请检查网站模板或站源地址")
+		return nil, false, errors.New("榴果站源未解析到影片：所有已知目录和模板入口均无有效片卡")
 	}
 	_ = finalURL
 	return items, len(items) > 0, nil

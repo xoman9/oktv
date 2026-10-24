@@ -421,6 +421,9 @@ func (d *Downloader) fetchProviderText(ctx context.Context, rawURL, referer stri
 				req.Header.Set("Referer", referer)
 			}
 			req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
+			if donor, _ := ctx.Value(liuguoCatalogRequestKey{}).(bool); donor {
+				req.Header.Set("Accept", liuguoCatalogAccept)
+			}
 			if noCache, _ := ctx.Value(providerTextNoCacheKey{}).(bool); noCache {
 				req.Header.Set("Cache-Control", "no-cache")
 			}

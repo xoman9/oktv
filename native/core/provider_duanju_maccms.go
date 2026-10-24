@@ -266,11 +266,7 @@ func maccmsCardRemark(card *html.Node) string {
 func maccmsCards(document *html.Node, source, base string) []Drama {
 	var cards []*html.Node
 	seen := map[*html.Node]bool{}
-	classes := maccmsCardClasses
-	if source == sourceLiuguo {
-		classes = append(append([]string(nil), classes...), "video-item", "vodlist_item", "thumbnail", "media-card")
-	}
-	for _, name := range classes {
+	for _, name := range maccmsCardClasses {
 		for _, node := range providerHTMLNodes(document, maccmsClassMatcher(name)) {
 			if !seen[node] {
 				seen[node] = true
@@ -422,6 +418,9 @@ func maccmsSourceIDFromURL(link string) string {
 }
 
 func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, page int, category string) ([]Drama, bool, error) {
+	if source == sourceLiuguo {
+		return d.fetchLiuguoCatalogPage(ctx, page, category)
+	}
 	base := d.duanjuBaseURL(source)
 	address := ""
 	switch {
@@ -461,19 +460,6 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 		class := strings.TrimSpace(category); if class == "" { class = "66" }; address=fmt.Sprintf("%s/index.php/vod/show/id/%s.html",base,url.PathEscape(class))
 	case source == sourceYouguo:
 		if page <= 1 { address = base + "/" } else { address = fmt.Sprintf("%s/page/%d/", base, page) }
-	case source == sourceLiuguo:
-		class := strings.TrimSpace(category)
-		if class == "" || class == "all" {
-			class = "3"
-		}
-		if !webProviderNumericID.MatchString(class) {
-			return nil, false, errors.New("榴果分类编号无效")
-		}
-		if page <= 1 {
-			address = fmt.Sprintf("%s/vodtype/%s.html", base, class)
-		} else {
-			address = fmt.Sprintf("%s/vodtype/%s-%d.html", base, class, page)
-		}
 	case source == sourceTaoguo || source == sourceYanguo:
 		class := strings.TrimSpace(category)
 		if class == "" || class == "all" { class = "1" }
@@ -518,9 +504,7 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 		return nil, false, err
 	}
 	items := maccmsCards(document, source, base)
-	if source == sourceLiuguo && len(items) == 0 {
-		return nil, false, errors.New("榴果分类目录未返回有效影片，请检查站点是否可访问")
-	}
+
 	_ = finalURL
 	return items, len(items) > 0, nil
 }

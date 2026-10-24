@@ -458,7 +458,14 @@ func (d *Downloader) fetchMaccmsCatalogPage(ctx context.Context, source string, 
 	case source == sourceYouguo:
 		if page <= 1 { address = base + "/" } else { address = fmt.Sprintf("%s/page/%d/", base, page) }
 	case source == sourceLiuguo:
-		if page <= 1 { address = base + "/" } else { address = fmt.Sprintf("%s/page/%d/", base, page) }
+		class := strings.TrimSpace(category)
+		if class == "" || class == "all" {
+			if page <= 1 { address = base + "/" } else { address = fmt.Sprintf("%s/page/%d/", base, page) }
+		} else if webProviderNumericID.MatchString(class) {
+			if page <= 1 { address = fmt.Sprintf("%s/vodtype/%s.html", base, class) } else { address = fmt.Sprintf("%s/vodtype/%s-%d.html", base, class, page) }
+		} else {
+			return nil, false, errors.New("榴果分类编号无效")
+		}
 	case source == sourceTaoguo || source == sourceYanguo:
 		class := strings.TrimSpace(category)
 		if class == "" || class == "all" { class = "1" }

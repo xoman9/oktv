@@ -36,13 +36,22 @@ type nativeLibraryExchangeDrama struct {
 	ReleaseStatus string   `json:"releaseStatus,omitempty"`
 }
 
+type nativeLibraryExchangeCatalog struct {
+	Page      int       `json:"page"`
+	HasMore   bool      `json:"hasMore"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	IDs       []string  `json:"ids,omitempty"`
+}
+
 type nativeLibraryExchange struct {
-	App        string                       `json:"app,omitempty"`
-	Kind       string                       `json:"kind"`
-	Version    int                          `json:"version"`
-	ExportedAt time.Time                    `json:"exportedAt"`
-	Count      int                          `json:"count"`
-	Dramas     []nativeLibraryExchangeDrama `json:"dramas"`
+	App        string                                  `json:"app,omitempty"`
+	Kind       string                                  `json:"kind"`
+	Version    int                                     `json:"version"`
+	ExportedAt time.Time                               `json:"exportedAt"`
+	Count      int                                     `json:"count"`
+	Dramas     []nativeLibraryExchangeDrama            `json:"dramas"`
+	Catalogs   map[string]nativeLibraryExchangeCatalog `json:"catalogs,omitempty"`
+	Hongguo    *hongguoCatalogState                    `json:"hongguo,omitempty"`
 }
 
 type nativeLibraryImportResult struct {
@@ -198,6 +207,25 @@ func (engine *nativeEngine) nativeLibraryExport() nativeLibraryExchange {
 		}
 		return document.Dramas[left].ID < document.Dramas[right].ID
 	})
+	document.Catalogs = map[string]nativeLibraryExchangeCatalog{}
+	for key, state := range engine.catalogStates {
+		source, _, _ := strings.Cut(key, "|")
+		if !nativeSourceAvailable(source) || state.Page < 1 || len(engine.catalogs[key]) == 0 {
+			continue
+		}
+		catalog := nativeLibraryExchangeCatalog{Page: state.Page, HasMore: state.HasMore, UpdatedAt: state.UpdatedAt}
+		for _, drama := range engine.catalogs[key] {
+			if seen[drama.ID] {
+				catalog.IDs = append(catalog.IDs, drama.ID)
+			}
+		}
+		if len(catalog.IDs) > 0 {
+			document.Catalogs[key] = catalog
+		}
+	}
+	if _, found := document.Catalogs[sourceHongguo]; found {
+		document.Hongguo = cloneHongguoCatalogState(engine.hongguoCatalog)
+	}
 	document.Count = len(document.Dramas)
 	return document
 }
@@ -263,7 +291,61 @@ func (engine *nativeEngine) nativeLibraryImport(document nativeLibraryExchange) 
 		if state.UpdatedAt.IsZero() {
 			state.UpdatedAt = time.Now()
 		}
+		if !reflect.DeepEqual(engine.catalogStates[source], state) {
+			changed = true
+		}
 		engine.catalogStates[source] = state
+	}
+	for key, catalog := range document.Catalogs {
+		source, category, categorized := strings.Cut(key, "|")
+		if len(incoming[source]) == 0 || !nativeSourceAvailable(source) || len(key) > 1024 || categorized && (category == "" || strings.Contains(category, "|")) || catalog.Page < 1 || catalog.Page > 1000000 {
+			continue
+		}
+		if task := engine.sourceTasks[source]; task != nil {
+			continue
+		}
+		accepted := map[string]bool{}
+		for _, drama := range incoming[source] {
+			accepted[drama.ID] = true
+		}
+		positions := map[string]nativeDrama{}
+		for _, drama := range engine.catalogs[source] {
+			positions[drama.ID] = drama
+		}
+		var members []nativeDrama
+		valid := len(catalog.IDs) > 0
+		for _, id := range catalog.IDs {
+			drama, found := positions[id]
+			if !found || !accepted[id] {
+				valid = false
+				break
+			}
+			members = append(members, drama)
+		}
+		if !valid {
+			continue
+		}
+		previous := engine.catalogStates[key]
+		if catalog.Page < previous.Page || catalog.Page == previous.Page && !previous.HasMore {
+			continue
+		}
+		if categorized {
+			merged := mergeNativeCatalog(engine.catalogs[key], members)
+			if !reflect.DeepEqual(merged, engine.catalogs[key]) {
+				engine.catalogs[key] = merged
+				changed = true
+			}
+		}
+		state := nativeCatalogState{Page: catalog.Page, HasMore: catalog.HasMore, UpdatedAt: catalog.UpdatedAt}
+		if !reflect.DeepEqual(previous, state) {
+			engine.catalogStates[key] = state
+			changed = true
+		}
+		if source == sourceHongguo && !categorized && !hongguoCatalogInitialized(engine.hongguoCatalog) && document.Hongguo != nil {
+			engine.downloader.restoreHongguoCatalog(document.Hongguo)
+			engine.hongguoCatalog = engine.downloader.hongguoCatalogSnapshot()
+			changed = true
+		}
 	}
 	counts, total := engine.nativeLibraryCountsLocked()
 	for source, count := range counts {

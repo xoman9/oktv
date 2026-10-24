@@ -717,7 +717,7 @@ func maccmsDetailCandidates(source, base, sourceID string) []string {
 	case source == sourceYouguo:
 		return []string{fmt.Sprintf("%s/vod/%s.html", base, sourceID), fmt.Sprintf("%s/video/%s", base, sourceID)}
 	case source == sourceLiuguo:
-		return []string{fmt.Sprintf("%s/voddetail/%s.html", base, sourceID), fmt.Sprintf("%s/vod/%s.html", base, sourceID)}
+		return []string{fmt.Sprintf("%s/vodplay/%s-1-1.html", base, sourceID)}
 	case source == sourceTaoguo:
 		return []string{
 			fmt.Sprintf("%s/index.php/vod/detail/id/%s.html", base, sourceID),

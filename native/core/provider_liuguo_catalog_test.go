@@ -85,3 +85,21 @@ func TestLiuguoCatalogDonorHeadersAndTerminalPage(t *testing.T) {
 		t.Fatal("donor terminal-page behavior mismatch", err)
 	}
 }
+
+func TestLiuguoCatalogDonorPlaybackEntry(t *testing.T) {
+	var paths []string
+	engine := sourceFixtureEngine(t, func(r *http.Request) (*http.Response, error) {
+		paths = append(paths, r.URL.Path)
+		if r.URL.Path != "/vodplay/901-1-1.html" {
+			return sourceFixtureResponse(r, 404, "missing"), nil
+		}
+		return sourceFixtureResponse(r, 200, `<h1 class="page-title">合成影片</h1><div class="playlist"><a href="/vodplay/901-1-1.html">第1集</a><a href="/vodplay/901-1-2.html">第2集</a></div>`), nil
+	})
+	drama, chapters, err := engine.downloader.fetchMaccmsDetail(context.Background(), sourceLiuguo, "901")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paths) != 1 || paths[0] != "/vodplay/901-1-1.html" || drama.SourceID != "901" || len(chapters) != 2 {
+		t.Fatalf("wrong donor entry: %v %+v %+v", paths, drama, chapters)
+	}
+}

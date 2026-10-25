@@ -1,115 +1,65 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
+	"io"
+	"net/http"
 	"strings"
 	"testing"
 )
 
-// 离线夹具：形状取自红果官网真实 player 页与 App 批量端点响应（2026-10-16 实测）。
-// 用于锁定「网页取流改走 ld+json contentUrl + 试看闸门」「App 取流改走批量端点」的解析行为。
-
-const hongguoPlayerFixturePage = `<script type="application/ld+json">{
-  "@context": "https://schema.org",
-  "@type": "VideoObject",
-  "url": "https://hongguoduanju.com/player/7693823855940357144",
-  "contentUrl": "https://hongguoduanju.com/video/public/7693825728432852030/360p.mp4"
-}</script>
-<script type="application/ld+json">{
-  "@context": "https://schema.org",
-  "@type": "VideoObject",
-  "url": "https://hongguoduanju.com/player/7693823855940357144",
-  "contentUrl": "https://hongguoduanju.com/video/public/7693825728432852030/480p.mp4"
-}</script>
-<script type="application/ld+json">{
-  "@context": "https://schema.org",
-  "@type": "VideoObject",
-  "url": "https://hongguoduanju.com/player/7693823855940357144",
-  "contentUrl": "https://hongguoduanju.com/video/public/9999999999999999999/360p.mp4"
-}</script>
-<script type="application/ld+json">{"@type":"Product","name":"not a video"}</script>`
-
-func TestHongguoWebPublicAddresses(t *testing.T) {
-	got := hongguoWebPublicAddresses(hongguoPlayerFixturePage, "7693825728432852030")
-	if len(got) != 2 {
-		t.Fatalf("want 2 addresses bound to this vid, got %d: %v", len(got), got)
-	}
-	for _, address := range got {
-		if !strings.Contains(address, "/video/public/7693825728432852030/") {
-			t.Fatalf("address not bound to requested vid: %s", address)
+func TestHongguo0716NativeRequestAndFallback(t *testing.T) {
+	engine := sourceFixtureEngine(t, func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Path {
+		case "/novel/player/multi_video_model/v1/":
+			for _, key := range []string{"X-Gorgon", "X-Khronos", "X-Ladon", "X-Argus", "X-Helios", "X-Medusa"} {
+				if r.Header.Get(key) == "" {
+					t.Fatalf("missing donor signature: %s", key)
+				}
+			}
+			for key, want := range map[string]string{"host_abi": "arm64-v8a", "dragon_device_type": "phone", "pv_player": "73532", "player_so_load": "1"} {
+				if r.URL.Query().Get(key) != want {
+					t.Fatalf("query %s=%s", key, r.URL.Query().Get(key))
+				}
+			}
+			if r.Method != http.MethodPost || r.Header.Get("Passport-Sdk-Version") != "50561" {
+				t.Fatal("donor request headers missing")
+			}
+			body, _ := io.ReadAll(r.Body)
+			var payload map[string]any
+			if json.Unmarshal(body, &payload) != nil || !strings.Contains(string(body), `"1004":["800001"]`) || payload["dr_scene"] != nil {
+				t.Fatalf("wrong donor payload: %s", body)
+			}
+			return sourceFixtureResponse(r, 200, `{"data":{"800001":{"video_model":"{\"fallback_api\":\"https://media.fqnovel.com/fallback\"}"}}}`), nil
+		case "/fallback":
+			return sourceFixtureResponse(r, 200, `{"video_info":{"data":{"video_duration":12,"video_list":{"v1":{"main_url":"https://media.example.test/episode.mp4","video_meta":{"vheight":720,"codec_type":"h264"}}}}}}`), nil
+		default:
+			t.Fatalf("unexpected donor route: %s", r.URL)
+			return nil, nil
 		}
-		if strings.Contains(address, "9999999999999999999") {
-			t.Fatalf("leaked a foreign video address: %s", address)
-		}
-	}
-}
-
-func TestHongguoNormalizeWebURL(t *testing.T) {
-	raw := `https://cdn.example/v.mp4?x=1\u0026y=2&amp;z=3&Range=0-1024`
-	out := hongguoNormalizeWebURL(raw)
-	if out != "https://cdn.example/v.mp4?x=1&y=2&z=3" {
-		t.Fatalf("normalize wrong: %s", out)
-	}
-}
-
-// routerLoaderFixture 是 loaderData 的一个 key/value 对，覆盖 page/layout 两种 key。
-func TestHongguoPlayerPage(t *testing.T) {
-	loader := map[string]any{
-		"player_(series_id)/(vid)/layout": map[string]any{"vid": "800001"},
-		"player_(series_id)/(vid)/page": map[string]any{
-			"vid":        "800001",
-			"series_id":  "700001",
-			"isSuccess":  true,
-			"publicVideoSeo": map[string]any{"available": true, "height": 360, "durationSeconds": 174},
-			"seriesDetail":   map[string]any{"accessible_episode_cnt": 10, "episode_cnt": 68,
-				"vid_list": []any{"800001", "800002"}},
-		},
-	}
-	data := map[string]any{"loaderData": loader}
-	page := hongguoPlayerPage(data)
-	if page == nil {
-		t.Fatal("player page not selected")
-	}
-	if mapString(page, "vid") != "800001" {
-		t.Fatalf("picked wrong page entry: %v", page["vid"])
-	}
-	detail, _ := page["seriesDetail"].(map[string]any)
-	if mapInt(detail, "accessible_episode_cnt") != 10 {
-		t.Fatalf("accessible gate not read: %v", detail)
-	}
-	if idx := hongguoEpisodeIndex(anyList(detail["vid_list"]), "800002"); idx != 2 {
-		t.Fatalf("episode index wrong: %d", idx)
-	}
-}
-
-func TestHongguoEpisodeIndexNotFound(t *testing.T) {
-	if got := hongguoEpisodeIndex([]any{"800001", "800002"}, "999999"); got != 0 {
-		t.Fatalf("unknown vid must yield 0, got %d", got)
-	}
-}
-
-// App 批量端点 data[vid].video_model 的内嵌 JSON 字符串解析。
-func TestParseHongguoAppModel(t *testing.T) {
-	encoded, _ := json.Marshal(map[string]any{
-		"video_duration": 174,
-		"video_list": []any{
-			map[string]any{"main_url": "https://cdn.example/x.mp4", "video_meta": map[string]any{"codec_type": "bytevc2", "definition": "720p"},
-				"encrypt_info": map[string]any{"spade_a": "00112233", "encryption_method": "cenc-aes-ctr"}},
-		},
 	})
-	// 真实批量端点里 video_model 是「内嵌的 JSON 字符串」，这里用 string 模拟该形态。
-	entry := map[string]any{"video_model": string(encoded)}
-	model := parseHongguoAppModel(entry)
-	if len(model) == 0 {
-		t.Fatal("model not parsed from encoded string")
+	media, err := engine.downloader.resolveProviderMedia(context.Background(), Task{DramaID: providerDramaID(sourceHongguo, "700001"), Chapter: Chapter{Source: sourceHongguo, VideoURL: "hongguo-cenc://800001"}})
+	if err != nil {
+		t.Fatal(err)
 	}
-	// 对象形态也要兼容
-	obj := map[string]any{"video_model": map[string]any{"video_list": []any{}}}
-	if m := parseHongguoAppModel(obj); m == nil || len(m) == 0 {
-		t.Fatal("object-form video_model not parsed")
+	if media.URL != "https://media.example.test/episode.mp4" || media.Quality != 720 {
+		t.Fatalf("wrong media: %+v", media)
 	}
-	// 无 video_model 时返回空
-	if m := parseHongguoAppModel(map[string]any{"other": 1}); m != nil {
-		t.Fatalf("expected nil model, got %v", m)
+}
+
+func TestHongguo0716VideoModelAndFallbackShapes(t *testing.T) {
+	for _, value := range []any{`{"video_duration":12}`, map[string]any{"video_duration": json.Number("12")}} {
+		if model := hongguoVideoModel(value); mapString(model, "video_duration") != "12" {
+			t.Fatal(model)
+		}
+	}
+	if len(hongguoVideoModel("invalid")) != 0 {
+		t.Fatal("invalid model accepted")
+	}
+	for _, value := range []any{"https://media.fqnovel.com/fallback", `{"fallback_api":"https://media.fqnovel.com/fallback"}`, []any{"https://media.fqnovel.com/fallback"}, map[string]any{"fallback_api": "https://media.fqnovel.com/fallback"}} {
+		if got := hongguoFallbackAddress(value); got != "https://media.fqnovel.com/fallback" {
+			t.Fatal(got)
+		}
 	}
 }

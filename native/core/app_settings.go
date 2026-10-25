@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+const (
+	hongguoPlayModeAppFirst = "1"
+	hongguoPlayModeWebFirst = "2"
+)
+
 type nativeResourceSettings struct {
 	ProxyMode           string `json:"proxyMode"`
 	ProxyURL            string `json:"proxyUrl"`

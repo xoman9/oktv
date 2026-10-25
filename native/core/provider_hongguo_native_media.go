@@ -6,76 +6,141 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
-// resolveHongguoAppMedia 取单集 CENC 片源（第 4 集及以后 / 网页试看范围外的集用这条）。
+// resolveHongguoAppMedia 取某集的 App 直链（0.7.16 起改走 multi_video_model）。
 //
-// 单集端点 /novel/player/video_model/v1/ 已失效（服务端对普通请求直接返回 0 字节空响应），
-// 改用参考项目同样在用的批量端点 /novel/player/multi_video_model/preload/v1：
-// 一次提交 mixed_video_id_map.1004=[vid]，从 data[vid].video_model（JSON 字符串）取出
-// 分片模型，再交给既有的 selectHongguoAppMedia 选流 + 解 spade_a 密钥。
+// 2026-10-22 起红果旧接口 `/novel/player/video_model/v1/` 已对部分分集
+// 不再返回 video_model；新链路为：
+//
+//  1. POST `/novel/player/multi_video_model/v1/`（六头签名 + 播放端专属
+//     query 字段），请求体用 `mixed_video_id_map`；
+//  2. 响应 `data[vid].video_model` 仍是 JSON 字符串，直接交给选流逻辑；
+//  3. 若只给了 `fallback_api`，则二次 GET 该地址，从
+//     `video_info.data.video_list` 取片源。
 func (downloader *Downloader) resolveHongguoAppMedia(ctx context.Context, videoID string) (providerMedia, error) {
 	if !hongguoNumericID.MatchString(videoID) {
 		return providerMedia{}, errors.New("红果视频 ID 无效")
 	}
 	payload := map[string]any{
 		"biz_param": map[string]any{
-			"detail_page_version": 0, "device_level": 3, "disable_digg_stat": false,
-			"need_all_video_definition": true, "need_mp4_align": false,
-			"use_os_player": false, "use_server_dns": false, "video_platform": 1024,
+			"detail_page_version":       0,
+			"device_level":              3,
+			"disable_digg_stat":         false,
+			"need_all_video_definition": true,
+			"need_mp4_align":            false,
+			"use_os_player":             false,
+			"use_server_dns":            false,
+			"video_platform":            1024,
 		},
-		"dr_scene": "preload",
 		"mixed_video_id_map": map[string]any{"1004": []string{videoID}},
 	}
-	result, err := downloader.hongguoAppRequest(ctx, http.MethodPost, "/novel/player/multi_video_model/preload/v1", nil, payload)
+	extra := url.Values{
+		"host_abi":                {"arm64-v8a"},
+		"dragon_device_type":      {"phone"},
+		"pv_player":               {"73532"},
+		"compliance_status":       {"0"},
+		"need_personal_recommend": {"1"},
+		"player_so_load":          {"1"},
+		"is_android_pad_screen":   {"0"},
+	}
+	result, err := downloader.hongguoAppRequest(ctx, http.MethodPost, "/novel/player/multi_video_model/v1/", extra, payload)
 	if err != nil {
 		return providerMedia{}, err
 	}
 	data := nestedMap(result, "data")
-	if data == nil {
-		return providerMedia{}, errors.New("红果 App 批量取流接口未返回数据")
-	}
-	entry, _ := data[videoID].(map[string]any)
-	if len(entry) == 0 {
-		// 批量接口的 data 形如 {vid: {...}}；个别情况下外层可能再套一层，兜底取第一个。
-		for _, value := range data {
-			if item, ok := value.(map[string]any); ok && nestedMap(item, "video_model") != nil {
-				entry = item
-				break
-			}
-		}
-	}
-	model := parseHongguoAppModel(entry)
+	entry := nestedMap(data, videoID)
+	model := hongguoVideoModel(entry["video_model"])
 	if len(model) == 0 {
-		return providerMedia{}, errors.New("红果 App 批量取流接口未返回本集片源模型")
+		if media, ok := downloader.hongguoFallbackMedia(ctx, model); ok {
+			return media, nil
+		}
+		return providerMedia{}, errors.New("红果 App 未返回该集播放信息")
 	}
-	return selectHongguoAppMedia(model)
+	if media, err := selectHongguoAppMedia(model); err == nil {
+		return media, nil
+	} else if media, ok := downloader.hongguoFallbackMedia(ctx, model); ok {
+		return media, nil
+	} else {
+		return providerMedia{}, err
+	}
 }
 
-// parseHongguoAppModel 把批量端点 data[vid].video_model 还原成模型 map。
-// video_model 通常是内嵌的 JSON 字符串；个别实现可能直接是对象。两种都兼容。
-func parseHongguoAppModel(entry map[string]any) map[string]any {
-	if entry == nil {
-		return nil
+// hongguoVideoModel 把 `video_model`（可能是 JSON 字符串或对象）转成 map。
+func hongguoVideoModel(value any) map[string]any {
+	switch typed := value.(type) {
+	case string:
+		var parsed map[string]any
+		decoder := json.NewDecoder(strings.NewReader(typed))
+		decoder.UseNumber()
+		if decoder.Decode(&parsed) != nil {
+			return map[string]any{}
+		}
+		return parsed
+	case map[string]any:
+		return typed
 	}
-	if model, ok := entry["video_model"].(map[string]any); ok {
-		return model
+	return map[string]any{}
+}
+
+// hongguoFallbackMedia 跟随 `fallback_api` 二次取片源。
+func (downloader *Downloader) hongguoFallbackMedia(ctx context.Context, model map[string]any) (providerMedia, bool) {
+	address := hongguoFallbackAddress(model["fallback_api"])
+	if address == "" {
+		return providerMedia{}, false
 	}
-	encoded, ok := entry["video_model"].(string)
-	if !ok {
-		return nil
+	parsed, err := url.Parse(address)
+	if err != nil || parsed.Scheme != "https" || (!strings.HasSuffix(parsed.Hostname(), "fqnovel.com") && !strings.HasSuffix(parsed.Hostname(), "snssdk.com")) {
+		return providerMedia{}, false
 	}
-	decoder := json.NewDecoder(strings.NewReader(encoded))
+	text, err := downloader.fetchProviderText(ctx, address, hongguoBaseURL+"/")
+	if err != nil {
+		return providerMedia{}, false
+	}
+	var outer map[string]any
+	decoder := json.NewDecoder(strings.NewReader(text))
 	decoder.UseNumber()
-	var model map[string]any
-	if err := decoder.Decode(&model); err != nil {
-		return nil
+	if decoder.Decode(&outer) != nil {
+		return providerMedia{}, false
 	}
-	return model
+	info := nestedMap(outer, "video_info", "data")
+	if len(info) == 0 {
+		return providerMedia{}, false
+	}
+	if media, err := selectHongguoAppMedia(info); err == nil {
+		return media, true
+	}
+	return providerMedia{}, false
+}
+
+// hongguoFallbackAddress 解析 `fallback_api` 的多种形态。
+func hongguoFallbackAddress(value any) string {
+	switch typed := value.(type) {
+	case string:
+		var parsed map[string]any
+		decoder := json.NewDecoder(strings.NewReader(typed))
+		if decoder.Decode(&parsed) == nil {
+			if address, ok := parsed["fallback_api"].(string); ok {
+				return address
+			}
+		}
+		return typed
+	case []any:
+		if len(typed) == 0 {
+			return ""
+		}
+		address, _ := typed[0].(string)
+		return address
+	case map[string]any:
+		address, _ := typed["fallback_api"].(string)
+		return address
+	}
+	return ""
 }
 
 func selectHongguoAppMedia(model map[string]any) (providerMedia, error) {

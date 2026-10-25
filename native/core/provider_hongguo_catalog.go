@@ -54,7 +54,15 @@ func (downloader *Downloader) fetchHongguoAppCatalogCategory(ctx context.Context
 		return key
 	}
 	client := downloader.hongguoClient()
-	client.catalogMu.Lock()
+	for !client.catalogMu.TryLock() {
+		timer := time.NewTimer(10 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
 	defer client.catalogMu.Unlock()
 	more, _ := ctx.Value(libraryMoreKey{}).(bool)
 	update, _ := ctx.Value(libraryUpdateKey{}).(bool)

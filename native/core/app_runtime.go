@@ -600,6 +600,11 @@ func (engine *nativeEngine) nativeCatalog(ctx context.Context, input nativeInput
 	if !validNativeCategory(source, category) {
 		return nativeCatalogResult{}, errors.New("内容分类无效")
 	}
+	if background, _ := ctx.Value(backgroundCatalogKey{}).(bool); source == sourceHongguo && !background {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
+		defer cancel()
+	}
 	cacheKey := nativeCatalogKey(source, category)
 	if err := ctx.Err(); err != nil {
 		return nativeCatalogResult{}, err

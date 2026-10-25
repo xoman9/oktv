@@ -39,7 +39,10 @@ jobs:
           yes | "$SDKM_BIN/sdkmanager" --licenses > /dev/null || true
           "$SDKM_BIN/sdkmanager" 'ndk;28.2.13676358'
       - name: Unit tests for migrated sources
-        run: go test ./core -run 'Test(MiguoSourceRegistration|ZhenguoAddedMacCMSSources|ZhenguoYouguoLiuguoRegistration|LiuguoCatalog|LibraryExchange)' -count=1
+        run: go test ./core -run 'Test(MiguoSourceRegistration|ZhenguoAddedMacCMSSources|ZhenguoYouguoLiuguoRegistration|LiuguoCatalog|LibraryExchange|Hongguo0716)' -count=1
+        working-directory: native
+      - name: Check Hongguo donor signing
+        run: go test ./core/sign6 -count=1
         working-directory: native
       - name: Check single-episode merge tests
         run: flutter test test/media_library_test.dart --plain-name 'one complete episode is sufficient for merge codec planning'
@@ -57,7 +60,7 @@ jobs:
         run: python scripts/configure_signing.py --clean
       - uses: actions/upload-artifact@v7
         with:
-          name: quanjushijie-1.4.6+98-arm64-v8a
-          path: dist/android/quanjushijie-1.4.6+98-arm64-v8a.apk
+          name: quanjushijie-1.4.7+99-arm64-v8a
+          path: dist/android/quanjushijie-1.4.7+99-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 14

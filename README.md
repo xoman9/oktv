@@ -1260,3 +1260,6 @@ flutter test --no-pub --dart-define=DISABLE_REMOTE_IMAGES=true --dart-define=ALL
 按用户要求，由用户自行安装体验，不执行手机 / 电视实机测试或启动模拟器。Windows 完整包需 Windows / Actions；本机缺少 iPhoneOS SDK，iOS 尚未完成 Xcode 构建，也没有已签名 IPA。本轮不运行远程 Actions，不请求或处理站源图片。
 
 此前的合成 CENC 换封装、少数分集合并转码和 Emby 成品独立解码检查已通过。平台状态单独记录，不将待验收项目混入上面的功能移植顺序。
+
+
+1.4.9+101 以 `3d947cb028c5fe8a808f8d737bcd29076a8176ef` 为唯一基底处理启动卡顿，保留该版榴果与红果流程，不包含后续 0.7.16 红果移植。启动优先显示已有剧库，合并重复缓存读取，避免过期缓存触发全站扫描；JSON 和目录模型解析移入后台 isolate，列表筛选排序复用结果，历史已完成更新不重复触发目录载入。红果前台浏览每分类只取一页，后台完整更新仍保留原有分页上限；既有剧库及导入导出的分页纪录不删除。新增对应 Go 与 Flutter 定向测试，由 ARM64 Actions 执行；本机无 Flutter SDK，实际设备启动流畅度尚待验证。

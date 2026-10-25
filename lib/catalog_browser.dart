@@ -41,6 +41,19 @@ class CatalogBrowser {
   final _menus = <String, List<CatalogCategory>>{};
   final _library = <String, Map<String, Drama>>{};
   final _sessions = <String, _CatalogSession>{};
+  final _cachedReads = <String, Future<CatalogPage>>{};
+
+  Future<CatalogPage> _cached(String source, {String category = ''}) {
+    final key = '$source|$category';
+    final pending = _cachedReads[key];
+    if (pending != null) return pending;
+    final read = repository.cached(source, category: category);
+    _cachedReads[key] = read;
+    return read.whenComplete(() {
+      if (identical(_cachedReads[key], read)) _cachedReads.remove(key);
+    });
+  }
+
   int _generation = 0;
 
   Future<void> cancel() {
@@ -102,7 +115,7 @@ class CatalogBrowser {
     final failures = <String>[];
     await _each(group.sources, (source) async {
       try {
-        final cached = await repository.cached(source.id);
+        final cached = await _cached(source.id);
         _remember(source.id, cached.items);
       } catch (_) {}
       if (cacheOnly) return;
@@ -227,7 +240,7 @@ class CatalogBrowser {
     if ((useCache || cacheOnly) && !force && !more && query.isEmpty) {
       await _each(sourceOrder, (source) async {
         try {
-          final cached = await repository.cached(
+          final cached = await _cached(
             source,
             category: requests[source]!,
           );
@@ -248,7 +261,7 @@ class CatalogBrowser {
       final cached = snapshot();
       if (cached.items.isNotEmpty) onCached?.call(cached);
       if (cacheOnly) return cached;
-      if (cached.fresh && cached.items.isNotEmpty) return cached;
+      if (cached.items.isNotEmpty) return cached;
     }
 
     // 跨源聚合搜索：并发打所有可见站源，由原生核心按标题/年份/集数归一去重，

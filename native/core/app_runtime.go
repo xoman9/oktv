@@ -646,6 +646,9 @@ func (engine *nativeEngine) nativeCatalog(ctx context.Context, input nativeInput
 		if page > 1 {
 			ctx = context.WithValue(ctx, libraryMoreKey{}, true)
 		}
+		if background, _ := ctx.Value(backgroundCatalogKey{}).(bool); !background {
+			ctx = context.WithValue(ctx, hongguoBrowsePageKey{}, true)
+		}
 		items, err = d.fetchHongguoAppCatalogCategory(ctx, category)
 		state := d.hongguoCatalogSnapshot()
 		result.hongguo = state

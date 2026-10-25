@@ -561,9 +561,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadingMore = false;
         _error = result.warning.isEmpty ? null : result.warning;
       });
-      unawaited(
-        saveUserChange(context, () => widget.store.refreshDramas(result.items)),
-      );
+      if (!cached) {
+        unawaited(
+          saveUserChange(context, () => widget.store.refreshDramas(result.items)),
+        );
+      }
     }
 
     try {
@@ -810,10 +812,19 @@ class _HomeScreenState extends State<HomeScreen> {
       _group.sources.any((source) => source.id == 'huangdou');
   bool get _hideVip => _supportsVipFilter && widget.store.hideVip;
 
+  Object? _visibleKey;
+  List<Drama> _visibleItems = const [];
+
   List<Drama> get _visible {
     final query = _search.text.trim().toLowerCase();
     final hidden = widget.store.hiddenSites;
-    return sortCatalog(
+    final view = widget.store.catalogView;
+    final key = (_items, query, _category, _hideVip, _onlineSearch,
+      view.sort, view.release, widget.store.profileEpoch,
+      hidden.join('|'), _visibleSourceIds.join('|'));
+    if (_visibleKey == key) return _visibleItems;
+    _visibleKey = key;
+    _visibleItems = sortCatalog(
       _items.where((drama) {
         if (!widget.store.allowsSource(drama.source)) return false;
         if (hidden.contains(drama.source)) return false;
@@ -828,8 +839,9 @@ class _HomeScreenState extends State<HomeScreen> {
             query.isEmpty ||
             matchesDramaQuery(drama, query);
       }),
-      widget.store.catalogView,
+      view,
     );
+    return _visibleItems;
   }
 
   bool get _catalogBusy =>

@@ -22,6 +22,8 @@ var hongguoAppGenres = []struct {
 	{key: "ai_series", scene: "ai_series", name: "AI剧"},
 }
 
+type hongguoBrowsePageKey struct{}
+
 type libraryMoreKey struct{}
 
 type libraryUpdateKey struct{}
@@ -61,6 +63,9 @@ func (downloader *Downloader) fetchHongguoAppCatalogCategory(ctx context.Context
 	pageLimit := downloader.cfg.MaxPagesPerSort
 	if pageLimit < 1 {
 		pageLimit = defaultConfig().MaxPagesPerSort
+	}
+	if browse, _ := ctx.Value(hongguoBrowsePageKey{}).(bool); browse {
+		pageLimit = 1
 	}
 	if pageLimit > 200 {
 		pageLimit = 200

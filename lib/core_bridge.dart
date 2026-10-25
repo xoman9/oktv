@@ -24,6 +24,11 @@ import 'catalog_updates.dart';
 import 'download_collections.dart';
 import 'resource_settings.dart';
 
+Future<CatalogPage> _catalogPage(Future<Map<String, dynamic>> read) async {
+  final data = await read;
+  return Isolate.run(() => CatalogPage.fromJson(data));
+}
+
 typedef _NativeRequest = Pointer<Utf8> Function(Pointer<Utf8>);
 typedef _DartRequest = Pointer<Utf8> Function(Pointer<Utf8>);
 typedef _NativeFree = Void Function(Pointer<Utf8>);
@@ -761,7 +766,9 @@ class NativeRepository extends AppRepository {
         input['force'] = true;
       }
       final body = jsonEncode(input);
-      final encoded = await Isolate.run(() => _nativeRequest(body)).timeout(
+      final response = await Isolate.run(() {
+        return jsonDecode(_nativeRequest(body)) as Map<String, dynamic>;
+      }).timeout(
         Duration(
           seconds: action == 'moveDownloads'
               ? 620
@@ -772,7 +779,6 @@ class NativeRepository extends AppRepository {
               : 70,
         ),
       );
-      final response = jsonDecode(encoded) as Map<String, dynamic>;
       if (response['ok'] != true) {
         throw AppFailure(
           response['error'] as String? ?? '读取失败，请重试',
@@ -870,6 +876,15 @@ class NativeRepository extends AppRepository {
     ];
   }
 
+  Future<CatalogPage> _catalogPageGuarded(Future<Map<String, dynamic>> read) async {
+    final epoch = access?.profileEpoch;
+    final page = await _catalogPage(read);
+    if (access?.locked == true || epoch != access?.profileEpoch) {
+      throw AppFailure('用户已切换，请重新操作');
+    }
+    return page;
+  }
+
   @override
   Future<CatalogPage> catalog(
     String source, {
@@ -877,8 +892,8 @@ class NativeRepository extends AppRepository {
     String query = '',
     String category = '',
     bool force = false,
-  }) async => CatalogPage.fromJson(
-    await _read('catalog-$source', {
+  }) async => _catalogPageGuarded(
+    _read('catalog-$source', {
       'action': 'catalog',
       'source': source,
       'page': page,
@@ -889,8 +904,8 @@ class NativeRepository extends AppRepository {
   );
   @override
   Future<CatalogPage> searchAcross(List<String> sources, String query) async =>
-      CatalogPage.fromJson(
-        await _call({
+      _catalogPageGuarded(
+        _call({
           'action': 'searchAcross',
           'sources': sources,
           'query': query,
@@ -898,8 +913,8 @@ class NativeRepository extends AppRepository {
       );
   @override
   Future<CatalogPage> cached(String source, {String category = ''}) async =>
-      CatalogPage.fromJson(
-        await _call({
+      _catalogPageGuarded(
+        _call({
           'action': 'cached',
           'source': source,
           'category': category,

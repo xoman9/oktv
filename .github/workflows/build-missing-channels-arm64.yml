@@ -45,7 +45,7 @@ jobs:
         run: go test ./core/sign6 -count=1
         working-directory: native
       - name: Check startup cache loading
-        run: flutter test test/catalog_startup_test.dart
+        run: flutter test test/catalog_startup_test.dart test/library_workflow_test.dart
       - name: Check single-episode merge tests
         run: flutter test test/media_library_test.dart --plain-name 'one complete episode is sufficient for merge codec planning'
       - name: Configure signing

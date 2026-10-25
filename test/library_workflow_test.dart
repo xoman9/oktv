@@ -54,6 +54,19 @@ void main() {
     },
   );
 
+  test('startup does not replay completed source updates', () async {
+    final store = await create();
+    final repository = LibraryFeatureRepository();
+    repository.statuses['hongguo'] = repository.finished('hongguo');
+    final changed = <String>[];
+    final updater = LibraryUpdater(repository, store, onCatalogChanged: changed.add);
+    addTearDown(updater.dispose);
+    await updater.refresh();
+    await updater.refresh();
+    expect(changed, isEmpty);
+    expect(updater.status('hongguo')?.count, repository.finished('hongguo').count);
+  });
+
   test('stopping during submission prevents queued source starts', () async {
     final store = await create();
     final repository = LibraryFeatureRepository()

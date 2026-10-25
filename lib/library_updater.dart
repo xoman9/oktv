@@ -52,11 +52,15 @@ class LibraryUpdater extends ChangeNotifier {
 
   void _accept(SourceStatus status, {bool submitted = false}) {
     if (!_valid || !store.allowsSource(status.source)) return;
+    final previous = _statuses[status.source];
     _statuses[status.source] = status;
     _errors.remove(status.source);
     final revision =
         '${status.operation}|${status.startedAt}|${status.finishedAt}|'
         '${status.updatedAt}|${status.count}|${status.storageError}';
+    if (previous == null && !submitted && !status.running) {
+      _delivered[status.source] = revision;
+    }
     if (!status.running &&
         (status.finishedAt != null || submitted) &&
         {

@@ -1,3 +1,4 @@
+import 'follow_updater.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -74,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _categoriesError;
   int _categoryGeneration = 0;
   late final LibraryUpdater _updater;
+  late final FollowUpdater _followUpdater;
   late final LiveRepository _liveRepository = LiveRepository();
   late final LiveStore _liveStore = LiveStore(
     widget.store.preferences,
@@ -459,6 +461,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onCatalogChanged: _catalogUpdated,
     )..addListener(_updateChanged);
     _updater.startWatching();
+    _followUpdater = FollowUpdater(widget.repository, widget.store)..start();
     widget.repository.catalogUpdates.addListener(_metadataChanged);
     if (widget.store.visibleSources.isNotEmpty) {
       _load(useCache: true);
@@ -472,6 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _updater.removeListener(_updateChanged);
     _updater.dispose();
+    _followUpdater.dispose();
     _liveRepository.dispose();
     _liveStore.dispose();
     _cacheRefreshTimer?.cancel();

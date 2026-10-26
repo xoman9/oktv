@@ -32,6 +32,8 @@ class RecommendationsScreen extends StatefulWidget {
 
 class _RecommendationsScreenState extends State<RecommendationsScreen> {
   static const _genres = [
+    CatalogCategory('home_feed', '首页推荐'),
+    CatalogCategory('find_drama', '找剧'),
     CatalogCategory('short_play', '真人剧'),
     CatalogCategory('comic_series', '漫剧'),
     CatalogCategory('ai_series', 'AI 剧'),

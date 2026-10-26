@@ -241,6 +241,29 @@ class SeriesSeasonNotice {
   }
 }
 
+class FollowCheck {
+  const FollowCheck(this.checkedAt, {this.failures = 0});
+
+  final DateTime checkedAt;
+  final int failures;
+
+  List<int> toJson() => [checkedAt.millisecondsSinceEpoch, failures];
+
+  factory FollowCheck.fromJson(Object? json) {
+    if (json is! List ||
+        json.length != 2 ||
+        json[0] is! int ||
+        json[1] is! int ||
+        (json[1] as int) < 0) {
+      throw const FormatException('追剧检查记录无效');
+    }
+    return FollowCheck(
+      DateTime.fromMillisecondsSinceEpoch(json[0] as int),
+      failures: json[1] as int,
+    );
+  }
+}
+
 int resumeEpisodeIndex(List<Episode> episodes, WatchEntry? watch) {
   if (episodes.isEmpty || watch == null) return 0;
   final current = episodes.indexWhere((item) => item.number == watch.episode);

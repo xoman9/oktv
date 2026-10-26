@@ -65,6 +65,7 @@ func (d Drama) DisplayTitle() string {
 }
 
 type Chapter struct {
+	Vertical       *bool           `json:"vertical,omitempty"`
 	VIP            bool            `json:"vip,omitempty"`
 	ID             string          `json:"id"`
 	Source         string          `json:"source,omitempty"`

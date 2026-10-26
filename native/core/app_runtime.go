@@ -563,6 +563,8 @@ func nativeDispatch(input nativeInput) (any, error) {
 		return engine.nativeDetail(ctx, input.Drama)
 	case "metadata":
 		return engine.nativeMetadata(ctx, input.Drama)
+	case "followCheck":
+		return engine.nativeFollowCheck(ctx, input.Drama)
 	case "resolve", "fallback":
 		playback, finish, err := engine.nativeBeginPlayback(ctx, input.Sequence)
 		if err != nil {

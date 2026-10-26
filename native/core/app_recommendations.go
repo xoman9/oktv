@@ -30,6 +30,11 @@ func (engine *nativeEngine) cachedRecommendations(genre string) (nativeCatalogRe
 }
 
 func (engine *nativeEngine) nativeRecommendations(ctx context.Context, input nativeInput) (nativeCatalogResult, error) {
+	if background, _ := ctx.Value(backgroundCatalogKey{}).(bool); !background {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
+		defer cancel()
+	}
 	genre := input.Category
 	if err := (hongguoRecommendationQuery{Genre: genre}).validate(); err != nil {
 		return nativeCatalogResult{}, err

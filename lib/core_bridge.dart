@@ -115,6 +115,8 @@ abstract class AppRepository {
   Future<void> cancelCatalog() async {}
   Future<void> cancelSuggestions() async {}
   Future<void> cancelRecommendations() async {}
+  Future<Drama> followCheck(Drama drama) async => (await detail(drama)).drama;
+
   Future<Drama?> supplementMetadata(Drama drama) async => null;
   Future<CatalogPage> recommendations(
     String genre, {
@@ -423,6 +425,16 @@ class NativeRepository extends AppRepository {
         'force': force,
       }),
     );
+  }
+
+  @override
+  Future<Drama> followCheck(Drama drama) async {
+    _authorize(drama.source);
+    final result = await _call({
+      'action': 'followCheck',
+      'drama': drama.toJson(),
+    });
+    return Drama.fromJson(Map<String, dynamic>.from(result['drama'] as Map));
   }
 
   @override
@@ -739,6 +751,7 @@ class NativeRepository extends AppRepository {
         'prepareCover',
         'detail',
         'metadata',
+        'followCheck',
         'resolve',
         'preload',
         'prepareHandoff',

@@ -460,9 +460,7 @@ class _SourcesScreenState extends State<SourcesScreen> {
             Text('最近更新：${sourceTimestamp(status?.updatedAt)}'),
             if (status != null && status.count > 0)
               Text(
-                source.id == 'hongguo'
-                    ? '已保存 ${status.count} 部${status.hasMore ? ' · 可继续加载' : ' · 当前剧库已加载完'}'
-                    : '已加载至第 ${status.page} 页${status.hasMore ? ' · 可继续加载' : ' · 当前分页已加载完'}',
+                '已加载至第 ${status.page} 页${status.hasMore ? ' · 可继续加载' : ' · 当前分页已加载完'}',
               ),
             const SizedBox(height: 12),
             Wrap(

@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const hongguoCatalogPageSize = 18
+
 var hongguoAppGenres = []struct {
 	key   string
 	scene string
@@ -29,6 +31,27 @@ type libraryMoreKey struct{}
 type libraryUpdateKey struct{}
 
 type libraryKnownKey struct{}
+
+func hongguoCatalogLoadedPage(state *hongguoCatalogState, category string) int {
+	page := 1
+	if state == nil {
+		return page
+	}
+	for _, genre := range hongguoAppGenres {
+		key := genre.key
+		if category != "" {
+			if key != category {
+				continue
+			}
+			key = "category:" + key
+		}
+		cursor := state.Feeds[key]
+		if cursor.Initialized && cursor.Offset >= 0 && cursor.Offset <= 1_000_000 {
+			page = max(page, (cursor.Offset+hongguoCatalogPageSize-1)/hongguoCatalogPageSize)
+		}
+	}
+	return page
+}
 
 func (downloader *Downloader) fetchHongguoAppCatalog(ctx context.Context) ([]Drama, error) {
 	return downloader.fetchHongguoAppCatalogCategory(ctx, "")
@@ -120,7 +143,7 @@ func (downloader *Downloader) fetchHongguoAppCatalogCategory(ctx context.Context
 				cursor.SessionID = ""
 			}
 			payload := map[string]any{
-				"req_scene": genre.scene, "offset": cursor.Offset, "limit": 18,
+				"req_scene": genre.scene, "offset": cursor.Offset, "limit": hongguoCatalogPageSize,
 				"req_type": "only_content", "need_selector_panel": false, "client_req_type": 3,
 				"session_id": cursor.SessionID, "filter_ids": "",
 				"select_items": map[string]any{

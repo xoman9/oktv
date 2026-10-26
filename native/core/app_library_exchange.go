@@ -347,6 +347,17 @@ func (engine *nativeEngine) nativeLibraryImport(document nativeLibraryExchange) 
 			changed = true
 		}
 	}
+	for key, state := range engine.catalogStates {
+		source, category, _ := strings.Cut(key, "|")
+		if source == sourceHongguo {
+			page := max(state.Page, hongguoCatalogLoadedPage(engine.hongguoCatalog, category))
+			if page != state.Page {
+				state.Page = page
+				engine.catalogStates[key] = state
+				changed = true
+			}
+		}
+	}
 	counts, total := engine.nativeLibraryCountsLocked()
 	for source, count := range counts {
 		result.Sources[source] = count

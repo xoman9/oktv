@@ -657,6 +657,7 @@ func (engine *nativeEngine) nativeCatalog(ctx context.Context, input nativeInput
 		items, err = d.fetchHongguoAppCatalogCategory(ctx, category)
 		state := d.hongguoCatalogSnapshot()
 		result.hongguo = state
+		result.Page = hongguoCatalogLoadedPage(state, category)
 		result.HasMore = hongguoCatalogHasMore(state)
 		if category != "" && state != nil {
 			result.HasMore = !state.Feeds["category:"+category].Exhausted

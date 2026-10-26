@@ -64,6 +64,13 @@ func (engine *nativeEngine) loadCatalogCache() {
 				engine.hongguoCatalog = engine.downloader.hongguoCatalogSnapshot()
 			}
 		}
+		for key, state := range engine.catalogStates {
+			source, category, _ := strings.Cut(key, "|")
+			if source == sourceHongguo {
+				state.Page = max(state.Page, hongguoCatalogLoadedPage(engine.hongguoCatalog, category))
+				engine.catalogStates[key] = state
+			}
+		}
 		return
 	}
 	var legacy map[string][]nativeDrama
@@ -222,7 +229,11 @@ func (engine *nativeEngine) saveCatalogCache(source string, result *nativeCatalo
 		engine.hongguoCatalog = cloneHongguoCatalogState(result.hongguo)
 	}
 	if result.Warning != "" {
-		result.Page = max(1, state.Page)
+		if result.hongguo != nil {
+			result.Page = max(1, state.Page, result.Page)
+		} else {
+			result.Page = max(1, state.Page)
+		}
 		result.HasMore = true
 	}
 	state.Page, state.HasMore = result.Page, result.HasMore

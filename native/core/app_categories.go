@@ -96,6 +96,11 @@ func (engine *nativeEngine) nativeCategories(ctx context.Context, source string,
 		return append(all, nativeAICategories...), nil
 	case sourceHuangdou:
 		return all, nil
+	case sourceYanguo:
+		for _, category := range duanjuStaticCategories[sourceYanguo] {
+			all = append(all, nativeCategory{ID: category.ID, Name: category.Name})
+		}
+		return all, nil
 	}
 	if isCustomMaccmsSource(source) {
 		// 自定义 maccms 站点：从首页导航实时提取分类；识别不到则仅展示"全部"。

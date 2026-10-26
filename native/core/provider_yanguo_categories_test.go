@@ -43,3 +43,31 @@ func TestYanguo171CategoriesAndPageRoutes(t *testing.T) {
 		t.Fatalf("unexpected requests: %v", paths)
 	}
 }
+
+func TestYanguo171CategoriesReplaceOldCachedOptions(t *testing.T) {
+	engine := &nativeEngine{categoryOptions: map[string][]nativeCategory{
+		sourceYanguo: {{ID: "", Name: "全部"}, {ID: "1", Name: "旧分类"}},
+		sourceTaoguo: {{ID: "", Name: "全部"}, {ID: "9", Name: "其他站源"}},
+	}}
+	for _, force := range []bool{false, true} {
+		categories, err := engine.nativeCategories(context.Background(), sourceYanguo, force)
+		if err != nil || len(categories) != 22 || categories[0].ID != "" {
+			t.Fatalf("force=%v categories=%v err=%v", force, categories, err)
+		}
+		found := false
+		for _, category := range categories {
+			if category.ID == "1" || category.Name == "旧分类" {
+				t.Fatalf("stale category retained: %+v", category)
+			}
+			if category.ID == "61" && category.Name == "日韩精选" {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatal("missing category 61")
+		}
+	}
+	if engine.categoryOptions[sourceTaoguo][1].Name != "其他站源" {
+		t.Fatal("other source cache changed")
+	}
+}

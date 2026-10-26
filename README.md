@@ -1305,3 +1305,8 @@ flutter test --no-pub --dart-define=DISABLE_REMOTE_IMAGES=true --dart-define=ALL
 依据用户提供的 `zhenguojian-0.2.171+2184-arm64-v8a.apk`（SHA-256 `fb92618fd5a788c3eb8c85e113efcde90dabccac71067a6271d7be5d91565621`）的 ARM64 Go 核心定位 `maccmsSourceIDFromURL`、`maccmsEpisodesOfSource`、`maccmsPlayerURL` 和 `resolveDuanjuWebPage`。参照其 URL 中的影片 ID 提取、先选同 ID 分集，以及 `$.url`、`const source`、播放器地址和逐级解析的流程，仅对艳果恢复这些行为。
 
 同时在艳果发现分集与当前影片 ID 明确不一致、播放页跳转到其他影片、或解析链未返回可识别媒体地址时返回错误，避免静默播放其他影片；保留现有分类、其他站源及红果移植，未改变站源域名。合成测试覆盖两部影片、不同分集、嵌套解析页、占位符、旧分集链接及跨影片跳转，未请求封面或媒体文件。本环境访问 APK 中的 `https://xqxq1.cc/` 时返回 `Site Unavailable` 页面，无法确认实时播放或当前域名服务状态；需要在站源可用的网络／设备上验收。
+
+
+### 1.4.16+108 艳果无分集列表处理
+
+针对用户反馈点选艳果后提示“未解析到分集列表”、无法进入播放画面，新增经过身份核对的单页播放入口：播放页没有可用分集链接，但其 `player_aaaa` / `player_data` 提供可用 URL，且其中影片 ID、播放链接或 canonical URL 能确认属于所选影片时，建立一条“正片”供播放；不接受明确属于其他影片或无法核对归属的播放数据。该入口不代表站源的其他分集已全部取得。源站返回 `Site Unavailable` 页面时显示站源不可用提示，与确实缺少分集分开处理；不更换站源或影响其他频道。定向合成测试覆盖有 ID、canonical、播放链接、混入其他影片、错误 ID、无法核对及不可用页面。本环境再次访问参考 APK 的既有主机时连接超时，仍无法验证用户设备上的真实页面及实际播放。

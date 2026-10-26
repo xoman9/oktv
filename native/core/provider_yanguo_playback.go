@@ -2,11 +2,14 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
 var yanguo171IDPattern = regexp.MustCompile(`(?i)/(?:voddetail|vodplay|detail|show|vod|drama|movie|tv|id)/([0-9]+)(?:[-./]|$)`)
@@ -72,6 +75,67 @@ func yanguo171Episodes(episodes []providerEpisode, sourceID string) []providerEp
 		return nil
 	}
 	return episodes
+}
+
+func yanguo171Unavailable(document *html.Node) bool {
+	for _, title := range providerHTMLNodes(document, func(node *html.Node) bool { return node.Data == "title" }) {
+		if strings.EqualFold(strings.TrimSpace(providerHTMLText(title)), "Site Unavailable") {
+			return true
+		}
+	}
+	return false
+}
+
+func yanguo171SinglePageEpisode(document *html.Node, pageURL, sourceID string) []providerEpisode {
+	if !maccmsEpisodeLink.MatchString(pageURL) || yanguo171SourceID(pageURL) != sourceID {
+		return nil
+	}
+	canonicalID := ""
+	for _, node := range providerHTMLNodes(document, func(node *html.Node) bool {
+		return node.Data == "link" && strings.EqualFold(providerHTMLAttr(node, "rel"), "canonical") ||
+			node.Data == "meta" && strings.EqualFold(providerHTMLAttr(node, "property"), "og:url")
+	}) {
+		raw := firstNonEmpty(providerHTMLAttr(node, "href"), providerHTMLAttr(node, "content"))
+		if id := yanguo171SourceID(raw); id != "" {
+			if id != sourceID {
+				return nil
+			}
+			canonicalID = id
+		}
+	}
+	for _, script := range providerHTMLNodes(document, func(node *html.Node) bool { return node.Data == "script" }) {
+		var text strings.Builder
+		for child := script.FirstChild; child != nil; child = child.NextSibling {
+			if child.Type == html.TextNode {
+				text.WriteString(child.Data)
+			}
+		}
+		matches := maccmsPlayerData.FindStringSubmatch(text.String())
+		if len(matches) < 2 {
+			continue
+		}
+		var fields map[string]any
+		if json.Unmarshal([]byte(matches[1]), &fields) != nil {
+			continue
+		}
+		identity := mapString(fields, "vod_id", "vodId", "series_id", "id")
+		if identity != "" && identity != sourceID {
+			continue
+		}
+		linkID := yanguo171SourceID(mapString(fields, "link"))
+		if linkID != "" && linkID != sourceID {
+			continue
+		}
+		if identity != sourceID && linkID != sourceID && canonicalID != sourceID {
+			continue
+		}
+		address := maccmsDecryptPlayerURL(mapString(fields, "url"), mapString(fields, "encrypt"))
+		if !isProviderHTTPMediaURL(address) || strings.ContainsAny(address, "{}") {
+			continue
+		}
+		return []providerEpisode{{Key: "1", Title: "正片", URL: pageURL, Index: 1}}
+	}
+	return nil
 }
 
 func yanguo171PlayerURL(body string) string {

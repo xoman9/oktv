@@ -643,10 +643,15 @@ func (d *Downloader) fetchMaccmsDetail(ctx context.Context, source, sourceID str
 			fmt.Sprintf("%s/detail/%s.html", base, sourceID))
 	}
 	var lastErr error
+	yanguoUnavailable := false
 	for _, address := range candidates {
 		document, finalURL, err := d.fetchProviderPage(ctx, address, base+"/", duanjuUserAgent)
 		if err != nil {
 			lastErr = err
+			continue
+		}
+		if source == sourceYanguo && yanguo171Unavailable(document) {
+			yanguoUnavailable = true
 			continue
 		}
 		episodes := maccmsEpisodesFromDocument(document)
@@ -656,10 +661,17 @@ func (d *Downloader) fetchMaccmsDetail(ctx context.Context, source, sourceID str
 				continue
 			}
 			episodes = yanguo171Episodes(episodes, sourceID)
+			if len(episodes) == 0 {
+				episodes = yanguo171SinglePageEpisode(document, finalURL, sourceID)
+			}
 		}
 		episodes = maccmsCollapseRouteEpisodes(episodes)
 		if len(episodes) == 0 {
-			lastErr = errors.New("未解析到分集列表")
+			if source == sourceYanguo {
+				lastErr = errors.New("艳果未找到与所选影片一致的分集或播放入口")
+			} else {
+				lastErr = errors.New("未解析到分集列表")
+			}
 			continue
 		}
 		drama := Drama{
@@ -695,6 +707,9 @@ func (d *Downloader) fetchMaccmsDetail(ctx context.Context, source, sourceID str
 		sortDuanjuChapters(chapters)
 		drama.EpisodeCount = json.Number(strconv.Itoa(len(chapters)))
 		return drama, chapters, nil
+	}
+	if source == sourceYanguo && yanguoUnavailable {
+		return Drama{}, nil, errors.New("艳果站源返回不可用页面，请稍后重试")
 	}
 	if lastErr == nil {
 		lastErr = errors.New("未找到该剧的详情页")

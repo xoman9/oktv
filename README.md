@@ -1298,3 +1298,10 @@ flutter test --no-pub --dart-define=DISABLE_REMOTE_IMAGES=true --dart-define=ALL
 为避免首页长转圈，保留前台目录／推荐含锁等待在内的 15 秒总预算、单次请求 6 秒、最多 2 次尝试，及可取消的目录／设备锁等待；旧缓存优先显示，原生解析在 isolate 执行。目录单次请求维持本项目每页 18 项，推荐采用参考的每批 54 项；不以替换整个 APP 的方式删除其他频道、播放器扩展、套件、图标、下载与合并功能。Go 版本和依赖维持本项目现有版本，移入模块仅使用已存在依赖或标准库。
 
 本轮本机已安装 Go 与 Dart SDK，红果原生、设备、推荐、分页、剧库交换及合成下载／离线播放定向测试通过；本机没有完整 Flutter SDK 或 Android 实机／模拟器，Flutter 追剧、弹幕和启动检查及 ARM64 编译交由 Actions。实际设备和上游即时播放效果尚未验收，不将合成测试等同于实机成功。
+
+
+### 1.4.15+107 艳果播放来源修正
+
+依据用户提供的 `zhenguojian-0.2.171+2184-arm64-v8a.apk`（SHA-256 `fb92618fd5a788c3eb8c85e113efcde90dabccac71067a6271d7be5d91565621`）的 ARM64 Go 核心定位 `maccmsSourceIDFromURL`、`maccmsEpisodesOfSource`、`maccmsPlayerURL` 和 `resolveDuanjuWebPage`。参照其 URL 中的影片 ID 提取、先选同 ID 分集，以及 `$.url`、`const source`、播放器地址和逐级解析的流程，仅对艳果恢复这些行为。
+
+同时在艳果发现分集与当前影片 ID 明确不一致、播放页跳转到其他影片、或解析链未返回可识别媒体地址时返回错误，避免静默播放其他影片；保留现有分类、其他站源及红果移植，未改变站源域名。合成测试覆盖两部影片、不同分集、嵌套解析页、占位符、旧分集链接及跨影片跳转，未请求封面或媒体文件。本环境访问 APK 中的 `https://xqxq1.cc/` 时返回 `Site Unavailable` 页面，无法确认实时播放或当前域名服务状态；需要在站源可用的网络／设备上验收。

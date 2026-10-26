@@ -289,6 +289,9 @@ func maccmsCards(document *html.Node, source, base string) []Drama {
 			continue // 分类导航不是剧集（如 /vodtype/2.html、/index.php/vod/type/id/7.html）
 		}
 		sourceID := maccmsSourceIDFromURL(link)
+		if source == sourceYanguo {
+			sourceID = yanguo171SourceID(link)
+		}
 		if sourceID == "" || ids[sourceID] {
 			continue
 		}
@@ -646,7 +649,15 @@ func (d *Downloader) fetchMaccmsDetail(ctx context.Context, source, sourceID str
 			lastErr = err
 			continue
 		}
-		episodes := maccmsCollapseRouteEpisodes(maccmsEpisodesFromDocument(document))
+		episodes := maccmsEpisodesFromDocument(document)
+		if source == sourceYanguo {
+			if finalID := yanguo171SourceID(finalURL); finalID != "" && finalID != sourceID {
+				lastErr = errors.New("艳果详情跳转到了其他影片")
+				continue
+			}
+			episodes = yanguo171Episodes(episodes, sourceID)
+		}
+		episodes = maccmsCollapseRouteEpisodes(episodes)
 		if len(episodes) == 0 {
 			lastErr = errors.New("未解析到分集列表")
 			continue

@@ -161,6 +161,13 @@ func (d *Downloader) resolveDuanjuMedia(ctx context.Context, task Task) (provide
 	address := strings.TrimSpace(task.Chapter.VideoURL)
 	pageURL := strings.TrimSpace(task.Chapter.PageURL)
 	referer := firstNonEmpty(task.Chapter.Referer, base+"/")
+	if source == sourceYanguo && pageURL != "" {
+		_, expected, valid := splitProviderDramaID(task.DramaID)
+		actual := yanguo171SourceID(pageURL)
+		if valid && actual != "" && actual != expected {
+			return providerMedia{}, errors.New("艳果分集与所选影片不一致，请重新打开剧集")
+		}
+	}
 	// Huaguo sometimes supplies a direct HLS address in the chapter but
 	// another route on the same episode's play page. The direct-address fast
 	// path used to skip those alternatives when its CDN could not connect.
@@ -250,6 +257,9 @@ func duanjuLooksLikeMedia(address string) bool {
 }
 
 func (d *Downloader) resolveDuanjuWebPage(ctx context.Context, source, pageURL, referer string) (providerMedia, error) {
+	if source == sourceYanguo {
+		return d.resolveYanguo171Page(ctx, pageURL, referer)
+	}
 	body, err := d.fetchProviderText(ctx, pageURL, referer)
 	if err != nil {
 		return providerMedia{}, err

@@ -722,6 +722,26 @@ func (engine *nativeEngine) nativeCatalog(ctx context.Context, input nativeInput
 	if err != nil {
 		result.Warning = publicError(err).Error()
 	}
+	if source == sourceTaoguo && page > 1 && err == nil {
+		engine.mu.Lock()
+		known := make(map[string]bool, len(engine.catalogs[cacheKey]))
+		for _, drama := range engine.catalogs[cacheKey] {
+			known[drama.ID] = true
+		}
+		previousPage := engine.catalogStates[cacheKey].Page
+		engine.mu.Unlock()
+		added := false
+		for _, drama := range items {
+			if drama.ID != "" && !known[drama.ID] {
+				added = true
+				break
+			}
+		}
+		if !added {
+			result.Page = max(1, previousPage)
+			result.HasMore = false
+		}
+	}
 	seen := map[string]bool{}
 	for _, drama := range items {
 		if drama.ID == "" || seen[drama.ID] {

@@ -63,7 +63,7 @@ jobs:
         run: python scripts/configure_signing.py --clean
       - uses: actions/upload-artifact@v7
         with:
-          name: quanjushijie-1.4.10+102-arm64-v8a
-          path: dist/android/quanjushijie-1.4.10+102-arm64-v8a.apk
+          name: quanjushijie-1.4.11+103-arm64-v8a
+          path: dist/android/quanjushijie-1.4.11+103-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 14

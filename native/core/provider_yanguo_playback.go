@@ -110,6 +110,18 @@ func yanguo171SinglePageEpisode(document *html.Node, pageURL, sourceID string) [
 				text.WriteString(child.Data)
 			}
 		}
+		if canonicalID == sourceID {
+			for _, match := range yanguo171PlayerPatterns[1].FindAllStringSubmatch(text.String(), -1) {
+				if len(match) < 2 {
+					continue
+				}
+				address := maccmsNormalizePlaybackURL(match[1])
+				parsed, err := url.Parse(address)
+				if err == nil && isProviderHTTPMediaURL(address) && !strings.ContainsAny(address, "{}") && (strings.HasSuffix(strings.ToLower(parsed.Path), ".m3u8") || strings.HasSuffix(strings.ToLower(parsed.Path), ".mp4")) {
+					return []providerEpisode{{Key: "1", Title: "正片", URL: pageURL, Index: 1}}
+				}
+			}
+		}
 		matches := maccmsPlayerData.FindStringSubmatch(text.String())
 		if len(matches) < 2 {
 			continue

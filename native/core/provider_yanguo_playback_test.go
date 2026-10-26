@@ -112,6 +112,10 @@ func TestYanguo171SinglePlayerPageWithoutEpisodeLinks(t *testing.T) {
 			fmt.Fprint(w, `<title>合成影片乙</title><link rel="canonical" href="/index.php/vod/detail/id/200.html"><script>var player_aaaa={"url":"https://media.example.test/film200.mp4","encrypt":0};</script>`)
 		case "/index.php/vod/play/id/500.html":
 			fmt.Fprint(w, `<title>合成影片戊</title><script>var player_aaaa={"link":"/index.php/vod/play/id/500/sid/1/nid/1.html","url":"https://media.example.test/film500.mp4","encrypt":0};</script>`)
+		case "/index.php/vod/play/id/600.html":
+			fmt.Fprint(w, `<title>合成影片己</title><link rel="canonical" href="/index.php/vod/play/id/600.html"><video id="video"></video><script>function plyr(){ const source = 'https://media.example.test/film600.mp4'; }</script><a href="/index.php/vod/play/id/999.html">推荐影片</a>`)
+		case "/index.php/vod/play/id/700.html":
+			fmt.Fprint(w, `<link rel="canonical" href="/index.php/vod/play/id/999.html"><script>const source = 'https://media.example.test/wrong.mp4';</script>`)
 		case "/index.php/vod/play/id/300.html":
 			fmt.Fprint(w, `<title>合成影片丙</title><script>var player_aaaa={"id":"999","url":"https://media.example.test/wrong.mp4","encrypt":0};</script>`)
 		case "/index.php/vod/play/id/400.html":
@@ -121,7 +125,7 @@ func TestYanguo171SinglePlayerPageWithoutEpisodeLinks(t *testing.T) {
 		}
 	})
 	d.providerHosts[sourceYanguo] = server.URL
-	for _, id := range []string{"100", "200", "500"} {
+	for _, id := range []string{"100", "200", "500", "600"} {
 		drama, chapters, err := d.fetchMaccmsDetail(context.Background(), sourceYanguo, id)
 		if err != nil || len(chapters) != 1 || chapters[0].Title != "正片" {
 			t.Fatalf("id=%s chapters=%+v err=%v", id, chapters, err)
@@ -131,7 +135,7 @@ func TestYanguo171SinglePlayerPageWithoutEpisodeLinks(t *testing.T) {
 			t.Fatalf("id=%s media=%+v err=%v", id, media, err)
 		}
 	}
-	for _, id := range []string{"300", "400"} {
+	for _, id := range []string{"300", "400", "700"} {
 		if _, _, err := d.fetchMaccmsDetail(context.Background(), sourceYanguo, id); err == nil {
 			t.Fatalf("unverified player %s accepted", id)
 		}

@@ -785,6 +785,8 @@ class NativeRepository extends AppRepository {
         Duration(
           seconds: action == 'moveDownloads'
               ? 620
+              : const {'libraryExportXZ', 'libraryImportXZ', 'libraryImport'}.contains(action)
+              ? 300
               : action == 'danmaku'
               ? 15
               : action == 'preload'

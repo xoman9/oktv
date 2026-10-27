@@ -88,16 +88,19 @@ func nativeLibraryExchangeCompressPure(document []byte) ([]byte, error) {
 }
 
 func nativeLibraryExchangeDecompress(payload []byte) ([]byte, error) {
+	if len(payload) > nativeLibraryExchangeCompressedBytes {
+		return nil, errors.New("剧库压缩包超过 128 MiB")
+	}
 	reader, err := xz.NewReader(bytes.NewReader(payload))
 	if err != nil {
-		return nil, err
+		return nil, errors.New("剧库文件解压失败，请确认文件完整")
 	}
 	document, err := io.ReadAll(io.LimitReader(reader, nativeLibraryExchangeBytes+1))
 	if err != nil {
-		return nil, err
+		return nil, errors.New("剧库文件解压失败，请确认文件完整")
 	}
 	if len(document) > nativeLibraryExchangeBytes {
-		return nil, errors.New("剧库文件解压后超过 32 MB")
+		return nil, errors.New("剧库文件解压后超过 256 MiB")
 	}
 	return document, nil
 }

@@ -1326,3 +1326,7 @@ flutter test --no-pub --dart-define=DISABLE_REMOTE_IMAGES=true --dart-define=ALL
 ### 1.4.19+111 Android 共存版
 
 以 1.4.19+111 为基底单独构建共存 APK，Android applicationId 为 `com.duanju.duanju_app.coexist`，桌面名称为“全剧视界 共存版”；原版本及其数据不会被安装覆盖。剧库和应用私有数据相互独立，导入导出可用于迁移。设备共存和共享下载路径仍需验证。
+
+### 1.4.20+112 共存版剧库备份容量
+
+统一导出与导入限制：解压后的交换数据最大 256 MiB，XZ 最大 128 MiB，并为大文件操作增加处理时间；保留旧版本备份和分页进度兼容。容量验证使用合成数据，尚未取得用户失败的备份文件，实际失败原因与设备导入仍待验证。

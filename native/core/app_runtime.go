@@ -307,7 +307,7 @@ func newNativeEngine(directory string) (*nativeEngine, error) {
 	return engine, nil
 }
 
-const nativeLibraryRequestLimit = 48 << 20
+const nativeLibraryRequestLimit = 257 << 20
 
 func NativeRequest(raw string) (result string) {
 	defer func() {

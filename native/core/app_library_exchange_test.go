@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -127,5 +129,33 @@ func TestLibraryExchangeHongguoCursorRestoredOnFreshImport(t *testing.T) {
 	restored.loadCatalogCache()
 	if restored.downloader.hongguoCatalogSnapshot().Feeds[key].Offset != 80 {
 		t.Fatal("native cursor not persisted")
+	}
+}
+
+func TestLibraryExchangeLargeXZIncludesPagination(t *testing.T) {
+	original := exchangeFixtureEngine(t)
+	id := providerDramaID(sourceLiuguo, "101")
+	original.catalogs[sourceLiuguo] = []nativeDrama{{ID: id, Source: sourceLiuguo, SourceID: "101", Title: "synthetic"}}
+	original.catalogStates[sourceLiuguo] = nativeCatalogState{Page: 7, HasMore: true}
+	document := original.nativeLibraryExport()
+	body, err := json.Marshal(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body = append(body[:len(body)-1], []byte(",\"padding\":\""+strings.Repeat("x", 33<<20)+"\"}")...)
+	compressed, err := nativeLibraryExchangeCompressPure(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := nativeLibraryImportXZ(base64.StdEncoding.EncodeToString(compressed))
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := exchangeFixtureEngine(t)
+	if _, err := target.nativeLibraryImport(decoded); err != nil {
+		t.Fatal(err)
+	}
+	if target.catalogStates[sourceLiuguo].Page != 7 || !target.catalogStates[sourceLiuguo].HasMore {
+		t.Fatal("pagination not restored")
 	}
 }

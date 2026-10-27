@@ -53,6 +53,9 @@ class LibraryTransfer {
     final LibraryImportResult result;
     final Set<String> sources;
     if (libraryPackageIsXZ(payload)) {
+      if (payload.length > libraryExchangeMaxCompressedBytes) {
+        throw const FormatException('剧库压缩包超过 128 MiB');
+      }
       result = await repository.importLibraryPackage(payload);
       sources = result.sources;
     } else {

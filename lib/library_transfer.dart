@@ -5,7 +5,8 @@ import 'core_bridge.dart';
 
 const libraryExchangeKind = 'library';
 const libraryExchangeVersion = 1;
-const libraryExchangeMaxBytes = 32 << 20;
+const libraryExchangeMaxBytes = 256 << 20;
+const libraryExchangeMaxCompressedBytes = 128 << 20;
 const libraryExchangeMaxEntries = 200000;
 
 class LibraryImportResult {
@@ -66,7 +67,7 @@ Map<String, dynamic> parseLibraryPackage(String text) {
   final trimmed = text.trim();
   if (trimmed.isEmpty) throw AppFailure('剧库文件是空的');
   if (trimmed.length > libraryExchangeMaxBytes) {
-    throw AppFailure('剧库文件超过 32 MB，无法导入');
+    throw AppFailure('剧库文件超过 256 MiB，无法导入');
   }
   Object? decoded;
   try {

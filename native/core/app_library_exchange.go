@@ -14,7 +14,8 @@ import (
 const (
 	nativeLibraryExchangeKind    = "library"
 	nativeLibraryExchangeVersion = 1
-	nativeLibraryExchangeBytes   = 32 << 20
+	nativeLibraryExchangeBytes   = 256 << 20
+	nativeLibraryExchangeCompressedBytes = 128 << 20
 	nativeLibraryExchangeEntries = 200000
 	nativeLibraryExchangeTagMax  = 64
 )
@@ -389,16 +390,26 @@ func (engine *nativeEngine) nativeLibraryExportXZ() (string, int, error) {
 	if err != nil {
 		return "", 0, err
 	}
+	if len(payload) > nativeLibraryExchangeBytes || len(document.Dramas) > nativeLibraryExchangeEntries {
+		return "", 0, errors.New("剧库备份超过导入容量或条目上限")
+	}
 	compressed, err := nativeLibraryExchangeCompress(payload)
 	if err != nil {
 		return "", 0, err
+	}
+	if len(compressed) > nativeLibraryExchangeCompressedBytes {
+		return "", 0, errors.New("剧库压缩包超过 128 MiB")
 	}
 	return base64.StdEncoding.EncodeToString(compressed), document.Count, nil
 }
 
 func nativeLibraryImportXZ(payload string) (nativeLibraryExchange, error) {
 	var document nativeLibraryExchange
-	raw, err := base64.StdEncoding.DecodeString(strings.TrimSpace(payload))
+	payload = strings.TrimSpace(payload)
+	if len(payload) > ((nativeLibraryExchangeCompressedBytes+2)/3)*4 {
+		return document, errors.New("剧库压缩包超过 128 MiB")
+	}
+	raw, err := base64.StdEncoding.DecodeString(payload)
 	if err != nil {
 		return document, errors.New("剧库压缩包格式无效")
 	}
@@ -407,7 +418,7 @@ func nativeLibraryImportXZ(payload string) (nativeLibraryExchange, error) {
 	}
 	decoded, err := nativeLibraryExchangeDecompress(raw)
 	if err != nil {
-		return document, errors.New("剧库文件解压失败，请确认文件完整")
+		return document, err
 	}
 	if json.Unmarshal(decoded, &document) != nil {
 		return document, errors.New("剧库文件格式无效")

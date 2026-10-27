@@ -58,7 +58,7 @@ jobs:
       - name: Verify coexist package and signature
         run: |
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)
-          APK=dist/android/quanjushijie-1.4.19+111-arm64-v8a.apk
+          APK=dist/android/quanjushijie-1.4.20+112-arm64-v8a.apk
           "$BUILD_TOOLS" dump badging "$APK" > "$RUNNER_TEMP/apk-badging.txt"
           python -c "from pathlib import Path; s=Path('$RUNNER_TEMP/apk-badging.txt').read_text(); assert \"package: name='com.duanju.duanju_app.coexist'\" in s; assert 'launchable-activity:' in s; assert '全剧视界 共存版' in s"
           "$(dirname "$BUILD_TOOLS")/apksigner" verify "$APK"
@@ -67,7 +67,7 @@ jobs:
         run: python scripts/configure_signing.py --clean
       - uses: actions/upload-artifact@v7
         with:
-          name: quanjushijie-1.4.19+111-coexist-arm64-v8a
-          path: dist/android/quanjushijie-1.4.19+111-arm64-v8a.apk
+          name: quanjushijie-1.4.20+112-coexist-arm64-v8a
+          path: dist/android/quanjushijie-1.4.20+112-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 14

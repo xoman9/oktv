@@ -1322,3 +1322,7 @@ flutter test --no-pub --dart-define=DISABLE_REMOTE_IMAGES=true --dart-define=ALL
 ### 1.4.19+111 艳果分类缓存修复
 
 艳果分类直接返回当前内置分类表，不再被旧版持久分类缓存覆盖，升级后无需清除用户剧库；分类请求及播放流程保持原样。使用旧缓存和其他站源缓存的合成数据验证，实际设备分类列表与源站响应仍待确认。
+
+### 1.4.19+111 Android 共存版
+
+以 1.4.19+111 为基底单独构建共存 APK，Android applicationId 为 `com.duanju.duanju_app.coexist`，桌面名称为“全剧视界 共存版”；原版本及其数据不会被安装覆盖。剧库和应用私有数据相互独立，导入导出可用于迁移。设备共存和共享下载路径仍需验证。

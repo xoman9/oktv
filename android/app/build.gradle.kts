@@ -31,12 +31,12 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.duanju.duanju_app"
+        applicationId = "com.duanju.duanju_app.coexist"
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = if (allSources) "1.4.2m" else flutter.versionName
-        manifestPlaceholders["appLabel"] = if (allSources) "全剧视界" else "短剧视界"
+        manifestPlaceholders["appLabel"] = if (allSources) "全剧视界 共存版" else "短剧视界 共存版"
         manifestPlaceholders["appBanner"] = if (allSources) "@drawable/tv_banner_all_sources" else "@drawable/tv_banner"
     }
 

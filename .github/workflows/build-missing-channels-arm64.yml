@@ -5,7 +5,7 @@ on:
     branches:
       - feature/zhenguo-missing-channels-20261021
       - fix/merge-single-unlimited-20261022
-      - fix/startup-lag-3d947cb-20261025
+      - build/coexist-1.4.19-20261028
   workflow_dispatch:
 
 permissions:
@@ -55,12 +55,19 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       - name: Build all-sources ARM64 APK
         run: python scripts/build_android.py --all-sources --abi arm64-v8a
+      - name: Verify coexist package and signature
+        run: |
+          BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)
+          APK=dist/android/quanjushijie-1.4.19+111-arm64-v8a.apk
+          "$BUILD_TOOLS" dump badging "$APK" > "$RUNNER_TEMP/apk-badging.txt"
+          python -c "from pathlib import Path; s=Path('$RUNNER_TEMP/apk-badging.txt').read_text(); assert \"package: name='com.duanju.duanju_app.coexist'\" in s; assert 'launchable-activity:' in s; assert '全剧视界 共存版' in s"
+          "$(dirname "$BUILD_TOOLS")/apksigner" verify "$APK"
       - name: Remove signing files
         if: always()
         run: python scripts/configure_signing.py --clean
       - uses: actions/upload-artifact@v7
         with:
-          name: quanjushijie-1.4.19+111-arm64-v8a
+          name: quanjushijie-1.4.19+111-coexist-arm64-v8a
           path: dist/android/quanjushijie-1.4.19+111-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 14

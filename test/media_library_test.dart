@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:duanju_app/core_bridge.dart';
+import 'package:duanju_app/download_collections.dart';
 import 'package:duanju_app/local_store.dart';
 import 'package:duanju_app/media_library.dart';
 import 'package:duanju_app/media_pipeline.dart';

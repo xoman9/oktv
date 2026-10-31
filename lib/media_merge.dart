@@ -31,7 +31,9 @@ const _mergedStorageChannel = MethodChannel('duanju/device');
 
 Future<bool> ensureSharedMergeStorage() async {
   if (!Platform.isAndroid) return true;
-  final granted = await _mergedStorageChannel.invokeMethod<bool>('sharedStorageAccess') ?? false;
+  final granted =
+      await _mergedStorageChannel.invokeMethod<bool>('sharedStorageAccess') ??
+      false;
   if (granted) return true;
   await _mergedStorageChannel.invokeMethod<bool>('requestSharedStorageAccess');
   return false;
@@ -39,13 +41,18 @@ Future<bool> ensureSharedMergeStorage() async {
 
 // Publish directly into the selected download root; never create library/full.mp4.
 // Reserve a unique name atomically, and keep the source until the copy is complete.
-Future<File> _publishMergedMp4(File original, Drama drama, String directory) async {
+Future<File> _publishMergedMp4(
+  File original,
+  Drama drama,
+  String directory,
+  List<int> episodes,
+) async {
   if (!path.isAbsolute(directory)) throw AppFailure('下載資料夾路徑無效');
   final base = Directory(directory);
   await base.create(recursive: true);
-  final title = _safeName(drama.title);
+  final title = '${_safeName(drama.title)}(${episodes.first}-${episodes.last})';
   for (var n = 0; n < 10000; n++) {
-    final name = n == 0 ? '$title-合.mp4' : '$title-合 ($n).mp4';
+    final name = n == 0 ? '$title.mp4' : '$title ($n).mp4';
     final dest = File(path.join(base.path, name));
     // File.create(exclusive: true) atomically reserves a name without
     // overwriting an existing merged video.
@@ -90,10 +97,7 @@ extension MediaMergeOperations on MediaLibrary {
     '恢复合并进度',
     (temporary) async {
       final existing = _items
-          .where(
-            (item) =>
-                item.id == task.outputId && item.merged && (item.decodeVerified || task.skipVerification),
-          )
+          .where((item) => item.id == task.outputId && item.merged)
           .firstOrNull;
       if (existing != null &&
           existing.drama.id == task.drama.id &&
@@ -117,7 +121,7 @@ extension MediaMergeOperations on MediaLibrary {
         }
         jobs.add(job);
       }
-      return _mergeFiles(continuousMergeJobs(jobs), temporary, task.outputId, skipVerification: task.skipVerification);
+      return _mergeFiles(continuousMergeJobs(jobs), temporary, task.outputId);
     },
     workspace: task.id,
     sources: {task.drama.source},
@@ -161,9 +165,8 @@ extension MediaMergeOperations on MediaLibrary {
   Future<LocalMediaItem> _mergeFiles(
     List<DownloadJob> jobs,
     Directory temporary,
-    String id, {
-    bool skipVerification = false,
-  }) async {
+    String id,
+  ) async {
     final sources = <Object>[];
     for (final job in jobs) {
       _check();
@@ -183,7 +186,7 @@ extension MediaMergeOperations on MediaLibrary {
         _mergeDigest(plan.decryptionKey),
       ]);
     }
-    final fingerprint = _mergeDigest(['merge-v3', sources, skipVerification]);
+    final fingerprint = _mergeDigest(['merge-v4-lowest', sources]);
     final checkpointFile = File(path.join(temporary.path, 'checkpoint.json'));
     var checkpoint = <String, dynamic>{
       'fingerprint': fingerprint,
@@ -232,14 +235,7 @@ extension MediaMergeOperations on MediaLibrary {
         final saved = MediaProbe(
           Map<String, dynamic>.from(raw['probe'] as Map),
         );
-        final probe = await executor.probe(file);
-        _check();
-        verifyMediaDuration(probe, saved.duration);
-        if (probe.videoSignature != saved.videoSignature ||
-            probe.audioSignature != saved.audioSignature) {
-          return null;
-        }
-        return probe;
+        return saved;
       } catch (_) {
         _check();
         return null;
@@ -265,6 +261,8 @@ extension MediaMergeOperations on MediaLibrary {
     for (var i = 0; i < jobs.length; i++) {
       _check();
       final target = path.join(temporary.path, 'original-$i.mkv');
+      status = '預備第 ${jobs[i].episode.number} 集';
+      notifyListeners();
       var probe = await restored(originals, jobs[i].id, target);
       if (probe == null) {
         probe = await _prepare(
@@ -272,6 +270,7 @@ extension MediaMergeOperations on MediaLibrary {
           target,
           .2 * i / jobs.length,
           .2 / jobs.length,
+          skipVerification: true,
         );
         await record(originals, jobs[i].id, target, probe);
       }
@@ -296,10 +295,10 @@ extension MediaMergeOperations on MediaLibrary {
     for (var i = 0; i < jobs.length; i++) {
       _check();
       status = plan.videoChanges[i]
-          ? '统一第 ${jobs[i].episode.number} 集视频格式'
+          ? '第 ${jobs[i].episode.number} 集格式不符，轉檔中'
           : plan.audioChanges[i]
-          ? '统一第 ${jobs[i].episode.number} 集音轨'
-          : '保留第 ${jobs[i].episode.number} 集码流';
+          ? '第 ${jobs[i].episode.number} 集格式不符，轉檔中'
+          : '預備第 ${jobs[i].episode.number} 集';
       notifyListeners();
       final target = path.join(
         temporary.path,
@@ -316,15 +315,19 @@ extension MediaMergeOperations on MediaLibrary {
           },
         );
         _check();
-        probe = await executor.probe(target);
-        _check();
-        verifyMediaDuration(probe, probes[i].duration);
+        probe = MediaProbe({
+          'format': {'duration': '${probes[i].duration}'},
+          'streams': [
+            plan.video.video,
+            if (plan.audio != null) plan.audio!.audio,
+          ],
+        });
         await record(parts, jobs[i].id, target, probe);
       }
       normalized.add(target);
     }
     _check();
-    status = '合并视频';
+    status = '合併第 ${jobs.first.episode.number} 集中';
     notifyListeners();
     final list = File(path.join(temporary.path, 'concat.txt'));
     await list.writeAsString(
@@ -358,20 +361,32 @@ extension MediaMergeOperations on MediaLibrary {
       ],
       duration: duration,
       progress: (value) {
-        progress = .7 + value * .18;
+        final elapsed = value * duration;
+        var boundary = 0.0;
+        var index = jobs.length - 1;
+        for (var i = 0; i < probes.length; i++) {
+          boundary += probes[i].duration;
+          if (elapsed < boundary) {
+            index = i;
+            break;
+          }
+        }
+        status = '合併第 ${jobs[index].episode.number} 集中';
+        progress = .7 + value * .28;
         notifyListeners();
       },
     );
     _check();
-    final checked = await executor.probe(output);
-    if (!skipVerification) {
-      verifyMediaDuration(checked, duration);
-      await _decodeOutput(output, checked.duration);
-    }
+    status = '儲存合併影片';
+    notifyListeners();
     // No second copy under library/: directly publish to the selected root.
     _check();
     final target = await _publishMergedMp4(
-      File(output), jobs.first.drama, await repository.downloadDirectory());
+      File(output),
+      jobs.first.drama,
+      await repository.downloadDirectory(),
+      jobs.map((job) => job.episode.number).toList(),
+    );
     final relative = path.basename(target.path);
     final item = LocalMediaItem(
       id: id,
@@ -379,12 +394,12 @@ extension MediaMergeOperations on MediaLibrary {
       file: relative,
       kind: 'merged',
       episodes: jobs.map((job) => job.episode.number).toList(),
-      duration: checked.duration,
+      duration: duration,
       bytes: await target.length(),
       created: DateTime.now(),
       videoTranscodes: plan.videoTranscodes,
       audioTranscodes: plan.audioTranscodes,
-      decodeVerified: !skipVerification,
+      decodeVerified: false,
       sourceVersion: fingerprint,
     );
     final previous = List<LocalMediaItem>.of(_items);

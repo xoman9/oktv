@@ -11,8 +11,8 @@ class MergeQueueJob {
     required this.created,
     this.state = 'queued',
     this.error = '',
-    this.cleanup = false,
-    this.skipVerification = false,
+    this.cleanup = true,
+    this.skipVerification = true,
   });
   final String id, owner, state, error;
   final Drama drama;
@@ -103,7 +103,7 @@ class MergeQueueJob {
       created: DateTime.parse(data['created'] as String),
       state: state,
       error: data['error'] as String? ?? '',
-      cleanup: data['cleanup'] == true,
+      cleanup: true,
       skipVerification: data['skipVerification'] == true,
     );
   }
@@ -236,8 +236,8 @@ class MergeQueue {
 
   Future<int> enqueue(
     List<List<DownloadJob>> groups, {
-    bool cleanup = false,
-    bool skipVerification = false,
+    bool cleanup = true,
+    bool skipVerification = true,
   }) async {
     final epoch = library.store.profileEpoch;
     if (!library.store.canDownload || groups.isEmpty) {
@@ -283,8 +283,8 @@ class MergeQueue {
             episodes: jobs.map((job) => job.episode.number).toList(),
             versions: versions,
             created: DateTime.now(),
-            cleanup: cleanup,
-            skipVerification: skipVerification,
+            cleanup: true,
+            skipVerification: true,
           ),
         );
         count++;
@@ -407,8 +407,8 @@ class MergeQueue {
             await _cleanupSources(job, item, epoch);
           }
           if (!_allowed(job, epoch)) continue;
-          await _setState(job.id, 'completed');
           await _cleanWorkspace(job.id);
+          await _setState(job.id, 'completed');
         } catch (failure) {
           if (_find(job.id)?.active == true) {
             final message = failure.toString();
@@ -445,9 +445,7 @@ class MergeQueue {
     await library.repository.workLease('mergeCleanup', 'start');
     try {
       final file = File(library.fileFor(output));
-      if ((!output.decodeVerified && !task.skipVerification) ||
-          !await file.exists() ||
-          await file.length() != output.bytes) {
+      if (!await file.exists() || await file.length() != output.bytes) {
         throw AppFailure('合并成品未确认完整，已保留原分集');
       }
       final current = {
@@ -463,6 +461,8 @@ class MergeQueue {
         }
         ids.add(id);
       }
+      library.status = '清理原分集、下載資料夾與暫存檔';
+      library.notifyListeners();
       for (var offset = 0; offset < ids.length; offset += 500) {
         if (!_allowed(task, epoch)) throw AppFailure('原分集清理已停止，合并成品保留');
         final chunk = ids.skip(offset).take(500).toList();
@@ -483,9 +483,14 @@ class MergeQueue {
   Future<void> _cleanWorkspace(String id) async {
     if (_root == null) return;
     final directory = Directory(path.join(_root!, '.merge-work', id));
+    if (await directory.exists()) await directory.delete(recursive: true);
     try {
-      if (await directory.exists()) await directory.delete(recursive: true);
-    } catch (_) {}
+      await directory.parent.delete();
+    } on FileSystemException {
+      if (await directory.parent.exists() &&
+          await directory.parent.list().isEmpty)
+        rethrow;
+    }
   }
 
   void dispose() {

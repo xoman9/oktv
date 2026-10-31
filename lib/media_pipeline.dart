@@ -28,6 +28,9 @@ class MediaProbe {
     video['width'],
     video['height'],
     video['pix_fmt'],
+    video['r_frame_rate'] ?? '30/1',
+    video['profile'] ?? 'unknown',
+    video['level'] ?? 'unknown',
     video['sample_aspect_ratio'] ?? '1:1',
     video['color_transfer'] ?? 'unknown',
     video['color_primaries'] ?? 'unknown',
@@ -84,17 +87,42 @@ class MergePlan {
 
   factory MergePlan.create(List<MediaProbe> probes) {
     if (probes.isEmpty ||
-        probes.any((p) => p.videoCodec.isEmpty || p.duration <= 0)) {
+        probes.any(
+          (p) =>
+              p.videoCodec.isEmpty ||
+              !p.duration.isFinite ||
+              p.duration <= 0 ||
+              intValue(p.video['width']) < 2 ||
+              intValue(p.video['height']) < 2,
+        )) {
       throw AppFailure('影片資料不完整或無法讀取');
     }
-    final video = _majority(probes, (p) => p.videoSignature);
+    final ordered = List<MediaProbe>.of(probes)
+      ..sort(
+        (a, b) => (intValue(a.video['width']) * intValue(a.video['height']))
+            .compareTo(
+              intValue(b.video['width']) * intValue(b.video['height']),
+            ),
+      );
+    final lowest = ordered.first;
+    final video = MediaProbe({
+      ...lowest.raw,
+      'streams': [
+        {
+          ...lowest.video,
+          'width': intValue(lowest.video['width']) ~/ 2 * 2,
+          'height': intValue(lowest.video['height']) ~/ 2 * 2,
+        },
+      ],
+    });
     final withAudio = probes.where((p) => p.hasAudio).toList();
     final audio = withAudio.isEmpty
         ? null
         : _majority(withAudio, (p) => p.audioSignature);
-    final vc = probes
-        .map((p) => p.videoSignature != video.videoSignature)
-        .toList();
+    final needsVideo = probes.any(
+      (p) => p.videoSignature != video.videoSignature,
+    );
+    final vc = List<bool>.filled(probes.length, needsVideo);
     var ac = probes
         .map((p) => audio != null && p.audioSignature != audio.audioSignature)
         .toList();
@@ -102,7 +130,7 @@ class MergePlan {
         audio?.audio['codec_name'] == 'aac' && ac.any((change) => change);
     if (canonicalAac) ac = List.filled(probes.length, true);
     if (vc.any((v) => v) && !{'h264', 'hevc'}.contains(video.videoCodec)) {
-      throw AppFailure('多数分集为 ${video.videoCodec}，当前不能将其他格式转换为此编码；原文件已保留。');
+      throw AppFailure('最低解析度分集為 ${video.videoCodec}，当前不能将其他格式转换为此编码；原文件已保留。');
     }
     for (var i = 0; i < probes.length; i++) {
       if (!vc[i]) continue;
@@ -182,7 +210,12 @@ class MergePlan {
         '-threads',
         '2',
         '-vf',
-        'scale=$width:$height:force_original_aspect_ratio=decrease,pad=$width:$height:(ow-iw)/2:(oh-ih)/2,setsar=$aspect,format=$pixel',
+        'scale=w=min(iw\\,$width):h=min(ih\\,$height):force_original_aspect_ratio=decrease:force_divisible_by=2,pad=$width:$height:(ow-iw)/2:(oh-ih)/2,setsar=$aspect,format=$pixel',
+        '-r',
+        video.video['r_frame_rate'] == null ||
+                video.video['r_frame_rate'] == '0/0'
+            ? '30'
+            : '${video.video['r_frame_rate']}',
       ]);
       if (video.videoCodec == 'hevc') {
         args.addAll(['-x265-params', 'pools=2:frame-threads=1']);

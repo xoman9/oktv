@@ -210,7 +210,7 @@ void main() {
     ]);
     expect(plan.audio, isNotNull);
     expect(plan.videoTranscodes, 0);
-    expect(plan.audioTranscodes, 2);
+    expect(plan.audioTranscodes, 3);
   });
 
   test(
@@ -273,7 +273,7 @@ void main() {
     try {
       await expectLater(
         library.merge(jobs),
-        throwsA(predicate((Object error) => error.toString().contains('已取消'))),
+        throwsA(predicate((Object error) => error is AppFailure && error.toString().contains('本地媒体处理已停止'))),
       );
       expect(executor.commands, isEmpty);
       expect(repository.leased, isFalse);

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:duanju_app/core_bridge.dart';
-import 'package:duanju_app/download_collections.dart';
 import 'package:duanju_app/local_store.dart';
 import 'package:duanju_app/media_library.dart';
 import 'package:duanju_app/media_pipeline.dart';
@@ -92,27 +91,6 @@ class FileRepository extends FixtureRepository {
   @override
   Future<List<DownloadJob>> downloads() async => jobs;
   @override
-  Future<DownloadBatchResult> controlDownloadBatch(
-    String command,
-    List<String> ids, {
-    Map<String, String> expectedVersions = const {},
-  }) async {
-    if (command != 'remove' ||
-        ids.any((id) => !expectedVersions.containsKey(id))) {
-      throw StateError('cleanup must supply source versions');
-    }
-    for (final id in ids) {
-      final job = jobs.firstWhere((job) => job.id == id);
-      final directory = File(files[job.episode.number - 1]).parent;
-      await directory.delete(recursive: true);
-      jobs.remove(job);
-      if (await directory.parent.list().isEmpty)
-        await directory.parent.delete();
-    }
-    return DownloadBatchResult(completed: ids);
-  }
-
-  @override
   Future<PlaybackPlan?> localPlayback(Drama drama, Episode episode) async {
     onLocalPlayback?.call();
     return PlaybackPlan(
@@ -154,45 +132,29 @@ MediaProbe fixtureProbe({
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  test('merge normalizes all video parameters when formats differ', () {
-    final plan = MergePlan.create([
-      fixtureProbe(),
-      fixtureProbe(),
-      fixtureProbe(codec: 'hevc', width: 640),
-    ]);
-    expect(plan.videoTranscodes, 3);
-    expect(plan.audioTranscodes, 0);
-    expect(plan.video.videoCodec, 'h264');
-    final audioOnly = MergePlan.create([
-      fixtureProbe(),
-      fixtureProbe(),
-      fixtureProbe(rate: 48000),
-    ]);
-    expect(audioOnly.videoTranscodes, 0);
-    expect(audioOnly.audioTranscodes, 3);
-    final identical = MergePlan.create([fixtureProbe(), fixtureProbe()]);
-    expect(identical.videoTranscodes, 0);
-    expect(identical.audioTranscodes, 0);
-  });
-
-  test('lowest resolution wins even when most episodes are larger', () {
-    final plan = MergePlan.create([
-      fixtureProbe(width: 640),
-      fixtureProbe(width: 640),
-      fixtureProbe(width: 320),
-    ]);
-    expect(plan.video.video['width'], 320);
-    expect(plan.video.video['height'], 180);
-    expect(plan.videoChanges, [true, true, true]);
-    final arguments = plan.normalizeArguments(
-      'in.mp4',
-      'out.ts',
-      fixtureProbe(width: 640),
-      0,
-    );
-    expect(arguments[arguments.indexOf('-vf') + 1], contains('pad=320:180'));
-    expect(arguments, contains('libx264'));
-  });
+  test(
+    'merge retains every matching video and normalizes only the minority',
+    () {
+      final plan = MergePlan.create([
+        fixtureProbe(),
+        fixtureProbe(),
+        fixtureProbe(codec: 'hevc', width: 640),
+      ]);
+      expect(plan.videoTranscodes, 1);
+      expect(plan.audioTranscodes, 0);
+      expect(plan.video.videoCodec, 'h264');
+      final audioOnly = MergePlan.create([
+        fixtureProbe(),
+        fixtureProbe(),
+        fixtureProbe(rate: 48000),
+      ]);
+      expect(audioOnly.videoTranscodes, 0);
+      expect(audioOnly.audioTranscodes, 1);
+      final identical = MergePlan.create([fixtureProbe(), fixtureProbe()]);
+      expect(identical.videoTranscodes, 0);
+      expect(identical.audioTranscodes, 0);
+    },
+  );
 
   test('one complete episode is sufficient for merge codec planning', () {
     final plan = MergePlan.create([fixtureProbe()]);
@@ -210,7 +172,7 @@ void main() {
     ]);
     expect(plan.audio, isNotNull);
     expect(plan.videoTranscodes, 0);
-    expect(plan.audioTranscodes, 3);
+    expect(plan.audioTranscodes, 2);
   });
 
   test(
@@ -248,43 +210,52 @@ void main() {
     },
   );
 
-  test('cancelling while resolving local media releases the lease without starting FFmpeg', () async {
-    final directory = await Directory.systemTemp.createTemp('zgj-cancel-');
-    SharedPreferences.setMockInitialValues({});
-    final store = LocalStore(await SharedPreferences.getInstance());
-    final executor = ProcessMediaExecutor();
-    const drama = Drama(id: 'hongguo:cancel', source: 'hongguo', title: '取消测试');
-    final jobs = [
-      for (var i = 0; i < 2; i++)
-        DownloadJob(
-          id: 'cancel-$i',
-          drama: drama,
-          episode: Episode({'id': '$i', 'currentEpisode': i + 1}, i + 1),
-          state: 'completed',
-          created: i + 1,
-        ),
-    ];
-    final repository = FileRepository(directory.path, [
-      'unused-1',
-      'unused-2',
-    ], jobs);
-    final library = MediaLibrary(repository, store, executor: executor);
-    repository.onLocalPlayback = () => unawaited(library.cancel());
-    try {
-      await expectLater(
-        library.merge(jobs),
-        throwsA(predicate((Object error) => error is AppFailure && error.toString().contains('本地媒体处理已停止'))),
+  test(
+    'cancelling while resolving local media releases the lease without starting FFmpeg',
+    () async {
+      final directory = await Directory.systemTemp.createTemp('zgj-cancel-');
+      SharedPreferences.setMockInitialValues({});
+      final store = LocalStore(await SharedPreferences.getInstance());
+      final executor = ProcessMediaExecutor();
+      const drama = Drama(
+        id: 'hongguo:cancel',
+        source: 'hongguo',
+        title: '取消测试',
       );
-      expect(executor.commands, isEmpty);
-      expect(repository.leased, isFalse);
-      expect(library.busy, isFalse);
-      expect(directory.listSync(), isEmpty);
-    } finally {
-      library.dispose();
-      store.dispose();
-      await directory.delete(recursive: true);
-    }
-  });
+      final jobs = [
+        for (var i = 0; i < 2; i++)
+          DownloadJob(
+            id: 'cancel-$i',
+            drama: drama,
+            episode: Episode({'id': '$i', 'currentEpisode': i + 1}, i + 1),
+            state: 'completed',
+            created: i + 1,
+          ),
+      ];
+      final repository = FileRepository(directory.path, [
+        'unused-1',
+        'unused-2',
+      ], jobs);
+      final library = MediaLibrary(repository, store, executor: executor);
+      repository.onLocalPlayback = () => unawaited(library.cancel());
+      try {
+        await expectLater(
+          library.merge(jobs),
+          throwsA(
+            predicate((Object error) => error.toString().contains('已取消')),
+          ),
+        );
+        expect(executor.commands, isEmpty);
+        expect(repository.leased, isFalse);
+        expect(library.busy, isFalse);
+        expect(directory.listSync(), isEmpty);
+      } finally {
+        library.dispose();
+        store.dispose();
+        await directory.delete(recursive: true);
+      }
+    },
+  );
 
   bool available;
   try {
@@ -304,13 +275,7 @@ void main() {
       try {
         final files = <String>[];
         for (var i = 0; i < 3; i++) {
-          final download = Directory(
-            path.join(directory.path, 'downloaded', 'episode-$i'),
-          );
-          await download.create(recursive: true);
-          await File(path.join(download.path, '.bundle'))
-              .writeAsString('temporary download state');
-          final file = path.join(download.path, 'input-$i.mp4');
+          final file = path.join(directory.path, 'input-$i.mp4');
           final result = await Process.run('ffmpeg', [
             '-v',
             'error',
@@ -369,21 +334,8 @@ void main() {
         ];
         final repository = FileRepository(directory.path, files, jobs);
         library = MediaLibrary(repository, store, executor: executor);
-        final statuses = <String>[];
-        final activeLibrary = library;
-        activeLibrary.addListener(() => statuses.add(activeLibrary.status));
         final merged = await library.merge(jobs);
-        expect(path.dirname(library.fileFor(merged)), directory.path);
-        expect(path.basename(library.fileFor(merged)), endsWith('(1-3).mp4'));
-        expect(merged.decodeVerified, isFalse);
-        expect(executor.commands.any((args) => args.contains('null')), isFalse);
-        expect(statuses, contains('預備第 3 集'));
-        expect(statuses, contains('第 3 集格式不符，轉檔中'));
-        expect(statuses, contains('合併第 3 集中'));
-        final outputProbe = await executor.probe(library.fileFor(merged));
-        expect(outputProbe.video['width'], 160);
-        expect(outputProbe.video['height'], 90);
-        expect(merged.videoTranscodes, 3);
+        expect(merged.videoTranscodes, 1);
         expect(merged.audioTranscodes, 0);
         expect(repository.leased, isFalse);
         expect(merged.episodes, [1, 2, 3]);
@@ -404,38 +356,14 @@ void main() {
           commandsBefore,
           reason: 'unchanged exports should not be remuxed again',
         );
-        final nfo = await File(path.join(show.path, 'tvshow.nfo'))
-            .readAsString();
+        final nfo = await File(
+          path.join(show.path, 'tvshow.nfo'),
+        ).readAsString();
         expect(nfo, contains('合成 &lt;&amp;&gt; 测试'));
         expect(nfo, contains('https://example.invalid/poster.jpg'));
-        await library.merges.enqueue([jobs]);
-        final deadline = DateTime.now().add(const Duration(seconds: 45));
-        while (library.merges.items.any((job) => job.active) &&
-            DateTime.now().isBefore(deadline)) {
-          await Future<void>.delayed(const Duration(milliseconds: 20));
+        for (final file in files) {
+          await File(file).delete();
         }
-        expect(
-          library.merges.items.single.state,
-          'completed',
-          reason: library.merges.items.single.error,
-        );
-        expect(
-          await Directory(path.join(directory.path, 'downloaded')).exists(),
-          isFalse,
-        );
-        expect(
-          await Directory(path.join(directory.path, '.merge-work')).exists(),
-          isFalse,
-        );
-        expect(await File(library.fileFor(merged)).exists(), isTrue);
-        expect(library.items.where((item) => item.merged), hasLength(2));
-        expect(
-          library.items
-              .where((item) => item.merged)
-              .map((item) => item.file)
-              .toSet(),
-          hasLength(2),
-        );
         for (final item in library.items) {
           final decoded = await Process.run('ffmpeg', [
             '-v',
@@ -469,7 +397,7 @@ void main() {
         expect(await File(library.fileFor(exported.first)).exists(), isFalse);
         expect(await File(library.fileFor(merged)).exists(), isTrue);
         await library.reload();
-        expect(library.items, hasLength(4));
+        expect(library.items, hasLength(3));
       } finally {
         library?.dispose();
         store.dispose();

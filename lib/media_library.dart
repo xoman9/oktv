@@ -409,16 +409,15 @@ class MediaLibrary extends ChangeNotifier {
     DownloadJob job,
     String destination,
     double base,
-    double weight, {
-    bool skipVerification = false,
-  }) async {
+    double weight,
+  ) async {
     _check();
     final plan = await repository.localPlayback(job.drama, job.episode);
     _check();
     if (plan == null || !plan.local) {
       throw AppFailure('第 ${job.episode.number} 集尚未完整下载');
     }
-    status = '預備第 ${job.episode.number} 集';
+    status = '读取第 ${job.episode.number} 集';
     notifyListeners();
     final input = <String>[];
     if (plan.decryptionKey.isNotEmpty) {
@@ -446,7 +445,7 @@ class MediaLibrary extends ChangeNotifier {
     _check();
     final probe = await executor.probe(destination);
     _check();
-    if (!skipVerification) verifyMediaDuration(probe, 0);
+    verifyMediaDuration(probe, 0);
     progress = base + weight;
     notifyListeners();
     return probe;

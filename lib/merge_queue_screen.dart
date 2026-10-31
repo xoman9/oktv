@@ -70,6 +70,8 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
         }
       }
       final selected = <String>{};
+      var cleanup = true;
+      var skipVerification = true;
       final accepted = await showDialog<bool>(
         context: context,
         builder: (context) => StatefulBuilder(
@@ -111,8 +113,21 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
                             },
                           ),
                   ),
-                  const Text('先統一為最低解析度與相容格式，再合併；不進行影片驗證。'),
-                  const Text('成品儲存成功後，自動刪除原分集、下載資料夾與暫存檔；失敗時保留原分集。'),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: skipVerification,
+                    title: const Text('免驗證快速合併'),
+                    onChanged: (value) => change(() {
+                      skipVerification = value == true;
+                    }),
+                  ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: cleanup,
+                    title: const Text('完成后删除原分集'),
+                    subtitle: const Text('合併檔成功儲存後清理原分集；失敗時保留原分集。'),
+                    onChanged: (value) => change(() => cleanup = value == true),
+                  ),
                 ],
               ),
             ),
@@ -132,7 +147,7 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
         ),
       );
       if (accepted != true || !mounted || !_allowed) return;
-      if (Platform.isAndroid && !(await ensureSharedMergeStorage())) {
+      if (skipVerification && Platform.isAndroid && !(await ensureSharedMergeStorage())) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('請在系統設定允許所有檔案存取權限，返回後重新加入快速合併')),
@@ -140,14 +155,13 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
         }
         return;
       }
-      final count = await widget.library.merges.enqueue(
-        [for (final id in selected) groups[id]!],
-        cleanup: true,
-        skipVerification: true,
-      );
+      final count = await widget.library.merges.enqueue([
+        for (final id in selected) groups[id]!,
+      ], cleanup: cleanup, skipVerification: skipVerification);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('已加入 $count 部，已有合并任务自动跳过')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('已加入 $count 部，已有合并任务自动跳过')));
       }
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
@@ -222,9 +236,9 @@ class _MergeQueueScreenState extends State<MergeQueueScreen> {
                                     children: [
                                       Text(
                                         job.drama.title,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium,
                                       ),
                                       const SizedBox(height: 6),
                                       Text(
